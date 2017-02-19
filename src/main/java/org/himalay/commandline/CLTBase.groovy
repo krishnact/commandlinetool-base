@@ -144,7 +144,7 @@ abstract class CLTBase extends Configurable{
 					{
 						if ( val == null)
 						{
-						}else if (val ==~ arg.regex())
+						}else if (!( val ==~ arg.regex()))
 						{
 								String msg = "${name} does not match ${arg.regex()}"
 								if (arg.required() == true)
