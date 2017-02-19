@@ -104,13 +104,19 @@ abstract class CLTBase extends Configurable{
 				String shortOpt = arg.shortOpt()
 				String argName  = arg.argName     ()==""? longOpt:arg.argName     ()
 				debug("Adding ${longOpt}, argName =${argName}, numberOfArgs=${arg.numberOfArgs()}")
+				String desc = arg.description ()==""? aField.name:arg.description ()
+				// If a regex is specified then add that to description.
+				if (arg.regex() != '(.)*')
+				{
+					desc += ". Possible values: ${arg.regex()}"
+				}
 				cli."${arg.shortOpt()}"(
 					longOpt     : longOpt,
 					argName     : argName,
 					required    : arg.required    ()                                    ,
 					optionalArg : arg.optionalArg ()                                    ,
 					args        : arg.numberOfArgs(),
-					arg.description ()==""? aField.name:arg.description (),
+					desc,
 				)
 			}
 		}
@@ -136,7 +142,18 @@ abstract class CLTBase extends Configurable{
 						val.class.name != 'java.lang.Boolean' || 	( aField.type.name =='java.lang.Boolean' && val.class.name == 'java.lang.Boolean' )
 					)
 					{
-						if ( val != null){
+						if ( val == null)
+						{
+						}else if (val ==~ arg.regex())
+						{
+								String msg = "${name} does not match ${arg.regex()}"
+								if (arg.required() == true)
+								{
+									throw new IllegalArgumentException(msg) 		
+								}else{
+									warn(msg)
+								}
+						}else if ( val != null){
 							this."set${name}"(val)
 							debug("Assigned ${aField.name}=${val}")
 						}
@@ -245,11 +262,28 @@ abstract class CLTBase extends Configurable{
 		return convertByteArrayToHexString(hashedBytes);
 	}
 	
+	/**
+	 * Get credentials from JSON credentials file (default is ~/etc/credentials.json)
+	 * @param server
+	 * @return
+	 */
 	public def getCredentials(String server, String credentialsFile=CREDENTIALS_FILE)
 	{
 		def cred = new groovy.json.JsonSlurper().parse(new File(credentialsFile))[server]
 		return cred
 	}
 
+	/**
+	 * Makes template
+	 * @param templateText
+	 * @param bindings
+	 * @return
+	 */
+	public String makeTemplate(String templateText, def bindings)
+	{
+		def engine = new groovy.text.SimpleTemplateEngine()
+		def template = engine.createTemplate(templateText).make(bindings)
+		return  template.toString()
+	}
 }
 

@@ -1,5 +1,7 @@
 package org.himalay.commandline;
 
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
 import java.util.Map
 
 import org.apache.commons.lang3.exception.ExceptionUtils
@@ -52,8 +54,44 @@ log4j.logger.org.apache=WARN
 //			LOGGER.info(ExceptionUtils.getFullStackTrace(e));
 //		}
 	}
+	/**
+	 * Create a configurable object. 
+	 * It reads a JSON config file from ./conf folder (can be changed by _CONF_FOLDER System Property). 
+	 * The values are stored as "config" member. 
+	 * Correct way to access the configuration is to use getConf method. 
+	 * All configurations are added one after the other starting from the base class. 
+	 * If a config parameter starts with "__" then it is not over written by derived class.
+	 */
 	public Configurable(boolean quiet)
 	{
+		// If a static logger has been declared then use that.
+		try{
+		   Field mem = this.class.declaredFields.find{
+			   boolean correctType = it.type == Logger.class ;
+			   int mod  =  it.modifiers
+
+			   boolean correctAccess = ((Modifier.STATIC & it.modifiers ) !=0 )
+			   return (correctType && correctAccess)
+			  }
+	       if ( mem != null)
+			   {
+				   String name = mem.name
+				   String properCaseName = name.substring(0,1).toUpperCase() + name.substring(1)  
+				   def memVal = null
+				   if ((Modifier.PUBLIC & mem.modifiers ) !=0 ) // If public
+				   {
+					   memVal = this.class."${name}"
+			       }else{
+					   memVal = this."get${properCaseName}"()
+				   }
+				   
+				   thisLogger = memVal
+			   }
+		}catch (groovy.lang.MissingPropertyException ex)
+		{
+			// No need to generate exception 
+		}
+		// Read the config file 
 		String className = this.class.canonicalName
 		String confFolderName = System.getProperty("_CONF_FOLDER");
 		if ( confFolderName == null)
@@ -95,15 +133,28 @@ log4j.logger.org.apache=WARN
 		}
 		
 	}
+	/**
+	 * Adds new values from specified Map to existing config object
+	 * @param conf
+	 * @return
+	 */
 	Map<String, Object> addConf(Map<String, Object> conf)
 	{
 		conf.each{
-			if (! it.key.toString().startsWith("__")){
+			def oldVal = it.value
+			if (
+					(!it.key.toString().startsWith("__")) 
+				||  oldVal == null
+				){
 				this.config[it.key] = it.value
 			}
 		}
 	}
 	
+	/**
+	 * Getter for config object
+	 * @return
+	 */
 	Map<String, Object> getConf()
 	{
 		return this.config

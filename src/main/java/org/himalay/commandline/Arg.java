@@ -17,4 +17,5 @@ public @interface Arg {
 	boolean required    () default false;
 	boolean optionalArg () default true;
 	int numberOfArgs    () default 1;
+	String regex        () default "(.)*";
 }
