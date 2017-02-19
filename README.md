@@ -28,11 +28,8 @@ Example: Writing a simple URL Size counter, in Groovy.
         @GrabResolver(name='jitpack', root='https://jitpack.io'),
         @Grab(group='com.github.krishnact', module='commandlinetool-base', version='0.0.2')
 ])
-import java.util.Date;
-import java.text.SimpleDateFormat;
 import org.himalay.commandline.Arg;
 import org.himalay.commandline.CLTBase;
-import org.himalay.persist.Table;
 
 class URLBytesCounter extends CLTBase
 {
