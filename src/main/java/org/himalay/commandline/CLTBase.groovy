@@ -1,6 +1,5 @@
 package org.himalay.commandline
 
-import org.apache.commons.cli.Option
 
 import groovy.lang.Closure
 import groovy.util.OptionAccessor
@@ -11,7 +10,7 @@ import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.Map
 
-abstract class CLTBase extends Configurable{
+class CLTBase implements AutoConfig, AutoLogger{
 	static String CREDENTIALS_FILE = System.getProperty("user.home")+ "/"+ $/etc/credentials.json/$ ;//new File()
 	
 	public static void _main(CLTBase instance, String [] args)
@@ -93,11 +92,12 @@ abstract class CLTBase extends Configurable{
 		this.class.declaredFields.each{Field aField->
 			aField.isAnnotationPresent(Arg.class)
 			Arg arg = aField.getAnnotation(Arg.class)
-			
+			String aField_type_name = aField.type.name
+			def fieldClass = aField.clazz
 			if ( arg != null )
 			{				// Add to cli
 				String longOpt = arg.longOpt     ()==""? aField.name    :arg.longOpt     ()
-				if ( longOpt.endsWith("s"))
+				if ( longOpt.endsWith("s") && aField_type_name =='java.util.List')
 				{
 					longOpt = longOpt.substring(0, longOpt.length() -1)
 				}
@@ -106,11 +106,23 @@ abstract class CLTBase extends Configurable{
 				debug("Adding ${longOpt}, argName =${argName}, numberOfArgs=${arg.numberOfArgs()}")
 				String desc = arg.description ()==""? aField.name:arg.description ()
 				// If a regex is specified then add that to description.
+				if (desc[-1] != '.'){
+					desc = desc +'.'
+				}
+
 				if (arg.regex() != '(.)*')
 				{
-					desc += ". Possible values: ${arg.regex()}"
+					desc += " Possible values: ${arg.regex()}."
 				}
-				cli."${arg.shortOpt()}"(
+				
+				// See if there is a default value
+				String properCaseName = aField.name.substring(0,1).toUpperCase()+ aField.name.substring(1)
+				def currVal = this."get${properCaseName}"()
+				if ( currVal != null){
+					desc = desc + " Default: ${currVal}"
+				}
+				String shortOptName = arg.shortOpt()
+				cli."${shortOptName}"(
 					longOpt     : longOpt,
 					argName     : argName,
 					required    : arg.required    ()                                    ,
@@ -138,13 +150,17 @@ abstract class CLTBase extends Configurable{
 					
 					String name = aField.name.substring(0,1).toUpperCase()+ aField.name.substring(1)
 					Object val = options."${aField.name}"
+					String valClassName = val.class.name
+					String aField_type_name = aField.type.name
+					def fieldClass = aField.clazz
 					if (
-						val.class.name != 'java.lang.Boolean' || 	( aField.type.name =='java.lang.Boolean' && val.class.name == 'java.lang.Boolean' )
+						 valClassName!= 'java.lang.Boolean' || 	
+						 ( aField.type.name =='boolean' && valClassName == 'java.lang.Boolean' )
 					)
 					{
 						if ( val == null)
 						{
-						}else if (val ==~ arg.regex())
+						}else if (!( val ==~ arg.regex()))
 						{
 								String msg = "${name} does not match ${arg.regex()}"
 								if (arg.required() == true)
@@ -154,7 +170,39 @@ abstract class CLTBase extends Configurable{
 									warn(msg)
 								}
 						}else if ( val != null){
+							if ( (val instanceof List<String> ) && arg.extend() == true)
+							{
+								List<String> listVal = [] as ArrayList<String>
+								val.each{aVal->
+									if (aVal.startsWith("@")){
+										//A file has been specified. Use contents from the file
+										new File(aVal.substring(1)).eachLine{String aLine->
+											listVal << aLine
+										}
+									}else{
+										listVal << aVal
+									}
+								}
+								val = listVal
 							this."set${name}"(val)
+							}else if ( aField_type_name =="int"){
+								this."set${name}"(val as Integer)
+							}else if ( aField_type_name =="long"){
+								this."set${name}"(val as Long)
+							}else if ( aField_type_name =="short"){
+								this."set${name}"(val as Short)
+							}else if (aField_type_name =="byte"){
+								this."set${name}"(val as Byte)
+							}else if (aField_type_name =="char"){
+								this."set${name}"(val as Character)
+							}else if ( aField_type_name =="float"){
+								this."set${name}"(val as Float)
+							}else if (aField_type_name =="double"){
+								this."set${name}"(val as Double)
+							}else{
+								this."set${name}"(val)
+							}
+							
 							debug("Assigned ${aField.name}=${val}")
 						}
 					}
@@ -169,7 +217,7 @@ abstract class CLTBase extends Configurable{
 	 * 
 	 * @param options
 	 */
-	protected abstract void realMain(OptionAccessor options);
+	//protected abstract void realMain(OptionAccessor options);
 
 	/**
 	 *
@@ -177,7 +225,7 @@ abstract class CLTBase extends Configurable{
 	 * @param envMap map of environment variables
 	 * @param workFolder The work folder
 	 * @param ioClosure A that take three arguments: procOutStrm, procInStr, procErrStr. If this passed as null then err stream and out stream are read and returned as err, out
-	 * @return
+	 * @return [out: sout , err: serr, exitValue: proc.exitValue()]
 	 */
 	public static Map<String,String> executeAnExternalCmd(String cmd, Map envMap, String workFolder, Closure ioClosure)
 	{
@@ -219,7 +267,7 @@ abstract class CLTBase extends Configurable{
 	 *
 	 * @param cmd The command to execute
 	 * @param workFolder The work folder
-	 * @return
+	 * @return [out: sout , err: serr, exitValue: proc.exitValue()]
 	 */
 	public static Map<String,String> executeAnExternalCmd(String cmd, String workFolder )
 	{
@@ -284,6 +332,10 @@ abstract class CLTBase extends Configurable{
 		def engine = new groovy.text.SimpleTemplateEngine()
 		def template = engine.createTemplate(templateText).make(bindings)
 		return  template.toString()
+	}
+
+	protected void realMain(OptionAccessor options){
+		throw new RuntimeException("Unimplemented. Please implement.");
 	}
 }
 
