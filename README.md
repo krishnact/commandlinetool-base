@@ -20,22 +20,22 @@ A library to base command line tools.
 </dependency>
 ```
 See jitpack to learn how to used in other build tools.
-https://jitpack.io/#krishnact/commandlinetool-base/0.0.2
+https://jitpack.io/#krishnact/commandlinetool-base/0.4.1
 
 Example: Writing a simple URL Size counter, in Groovy.
 ```
 @Grapes([
         @GrabResolver(name='jitpack', root='https://jitpack.io'),
-        @Grab(group='com.github.krishnact', module='commandlinetool-base', version='0.0.4'),
+        @Grab(group='com.github.krishnact', module='commandlinetool-base', version='0.4.1'),
         @Grab(group='org.slf4j', module='slf4j-log4j12', version='1.7.7')
 ])
-import org.himalay.commandline.Arg;
+import org.himalay.commandline.Option;
 import org.himalay.commandline.CLTBase;
 
 class URLBytesCounter extends CLTBase
 {
     
-        @Arg(required= true)
+        @Option(required= true)
         List<String> sites;
         
         @Override
