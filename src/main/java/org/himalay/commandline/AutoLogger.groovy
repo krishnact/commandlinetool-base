@@ -38,6 +38,11 @@ trait AutoLogger {
 		getLogger().debug(message)
 	}
 
+	public void error(String message)
+	{
+		getLogger().error(message)
+	}
+	
 	public void warn(String message)
 	{
 		getLogger().warn(message)
@@ -46,6 +51,31 @@ trait AutoLogger {
 	public void trace(String message)
 	{
 		getLogger().trace(message)
+	}
+	
+	public void info(String message, Throwable throwable)
+	{
+		getLogger().info(message, throwable)
+	}
+
+	public void debug(String message, Throwable throwable)
+	{
+		getLogger().debug(message, throwable)
+	}
+
+	public void error(String message, Throwable throwable)
+	{
+		getLogger().error(message, throwable)
+	}
+	
+	public void warn(String message, Throwable throwable)
+	{
+		getLogger().warn(message, throwable)
+	}
+	
+	public void trace(String message, Throwable throwable)
+	{
+		getLogger().trace(message, throwable)
 	}
 	
 	public Logger getLogger()
@@ -114,15 +144,17 @@ public class _LOGGER_HELPER{
 			}
 		}
 		Properties props = new Properties();
-		String log4jText = '''
-			log4j.rootLogger=INFO, A1
+		def logLevel = System.getenv()["__LOGLEVEL"]
+		if (logLevel == null ) logLevel='INFO'
+		String log4jText = """
+			log4j.rootLogger=${logLevel}, A1
 			
 			log4j.appender.A1=org.apache.log4j.ConsoleAppender
 			log4j.appender.A1.layout=org.apache.log4j.PatternLayout
 			# Print the date in ISO 8601 format
 			log4j.appender.A1.layout.ConversionPattern=%d [%t] %-5p %c - %m%n
 			log4j.logger.org.apache=WARN
-			'''
+			"""
 		PropertyConfigurator.configure(new ByteArrayInputStream(log4jText.bytes))
 		
 		try {
@@ -132,7 +164,9 @@ public class _LOGGER_HELPER{
 				props.load(new FileInputStream(propsFile));
 				PropertyConfigurator.configure(props);
 			}else{
-				_LOGGER.info("Continuing with default log4j properties")
+				if ( System.getenv()['__QUIET'] == null){
+					_LOGGER.info("Continuing with default log4j properties")
+				}
 			}
 		} catch (Exception e) {
 			PropertyConfigurator.configure(new ByteArrayInputStream(log4jText.bytes))

@@ -1,5 +1,6 @@
 package org.himalay.persist
 
+import java.sql.ResultSet
 import java.sql.ResultSetMetaData;
 
 import groovy.sql.GroovyResultSet;
@@ -10,6 +11,11 @@ class Table {
 	
 	String row;
 	String col;
+	String name=""
+	Closure header = {return it.toString()};
+	Closure column= {return it.toString()};
+	Closure columns = {return it};
+	Closure headers = {return it};
 	public Table(String row, String col, boolean useUpperCase = true) {
 		super();
 		this.row = row;
