@@ -16,11 +16,11 @@ A library to base command line tools.
 <dependency>
 	    <groupId>com.github.krishnact</groupId>
 	    <artifactId>commandlinetool-base</artifactId>
-	    <version>0.4.2</version>
+	    <version>0.4.3</version>
 </dependency>
 ```
 See jitpack to learn how to used in other build tools.
-https://jitpack.io/#krishnact/commandlinetool-base/0.4.2
+https://jitpack.io/#krishnact/commandlinetool-base/0.4.3
 
 Example: Writing a simple URL Size counter, in Groovy.
 ```
