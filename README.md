@@ -26,7 +26,7 @@ Example: Writing a simple URL Size counter, in Groovy.
 ```
 @Grapes([
         @GrabResolver(name='jitpack', root='https://jitpack.io'),
-        @Grab(group='com.github.krishnact', module='commandlinetool-base', version='0.4.1'),
+        @Grab(group='com.github.krishnact', module='commandlinetool-base', version='0.4.3'),
         @Grab(group='org.slf4j', module='slf4j-log4j12', version='1.7.7')
 ])
 import org.himalay.commandline.Option;
