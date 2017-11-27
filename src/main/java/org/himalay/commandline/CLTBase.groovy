@@ -205,6 +205,8 @@ class CLTBase implements AutoConfig, AutoLogger{
 								if (val.startsWith("=")){
 									//A file has been specified. Use contents from the file
 									this."set${name}"(new File(val.substring(1)).text)
+								}else{
+									this."set${name}"(val as String)
 								}
 							}else if ( aField_type_name =="int"){
 								this."set${name}"(val as Integer)

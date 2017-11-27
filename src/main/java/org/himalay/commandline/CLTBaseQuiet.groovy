@@ -69,4 +69,33 @@ class CLTBaseQuiet extends org.himalay.commandline.CLTBase{
 	public String makeTemplate(String templateText, Object bindings) {
 		return super.makeTemplate(templateText, bindings);
 	}
+	public void info(String message, Throwable throwable)
+	{
+		super.info(message, throwable)
+	}
+
+	public void debug(String message, Throwable throwable)
+	{
+		super.debug(message, throwable)
+	}
+
+	public void error(String message, Throwable throwable)
+	{
+		super.error(message, throwable)
+	}
+	
+	public void warn(String message, Throwable throwable)
+	{
+		super.warn(message, throwable)
+	}
+	
+	public void trace(String message, Throwable throwable)
+	{
+		super.trace(message, throwable)
+	}
+
+	@Override
+	public void error(String message) {
+		super.error(message)
+	}
 }

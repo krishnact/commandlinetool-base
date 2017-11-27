@@ -50,11 +50,46 @@ class RDBMS {
 		db.driver      = root.depthFirst().find { it.name() == 'property' && it.@name == 'connection.driver_class'}.text()
 	}
 	
+	/**
+	 * 
+	 * @param table
+	 * @param columns Names of coulmns separated by comma 
+	 * @return
+	 */
+	RDBMS makeNumeric(String table, String columns)
+	{
+		columns.split(",").each{String column->
+			String sqlStr = "alter table ${table} alter column ${column} numeric".toString()
+			getSql().execute(sqlStr);
+		}
+		return this;
+	}
+	
 	public static RDBMS forEachRow(String hibernateConfigFileName , String sql, Closure itemAndIndex ){
 		File hibFile = new File(hibernateConfigFileName)
 		RDBMS rdbms = new RDBMS(hibFile)
 		rdbms.forEachRow(sql, itemAndIndex);
 		return RDBMS
+	}
+
+
+	public void eachRow(String sql, Closure itemAndIndex ){
+		LOGGER.info ("Executing ${sql}")
+		groovy.sql.Sql sqlTmp = getSql();
+		int idx = 0;
+		try{
+			sqlTmp.eachRow(sql) {
+				try{
+					itemAndIndex(it,idx)
+				}catch(Exception ex) {
+					LOGGER.error ex.toString()
+				}
+				idx++
+			}
+		}catch(Exception ex) {
+			LOGGER.error ex.toString()
+		}
+		//sqlTmp?.close();
 	}
 
 	public void forEachRow(String sql, Closure itemAndIndex ){
@@ -73,7 +108,7 @@ class RDBMS {
 		}catch(Exception ex) {
 			LOGGER.error ex.toString()
 		}
-		sqlTmp?.close();
+		//sqlTmp?.close();
 	}
 
 	public static RDBMS h2Mem(String name) {
