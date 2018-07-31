@@ -8,6 +8,7 @@ import java.sql.ResultSetMetaData
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+import groovy.sql.GroovyResultSet
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql;
 
@@ -86,6 +87,21 @@ class RDBMS {
 	{
 		columns.split(",").each{String column->
 			String sqlStr = "alter table ${table} alter column ${column} bigint".toString()
+			getSql().execute(sqlStr);
+		}
+		return this;
+	}
+
+	/**
+	 *
+	 * @param table
+	 * @param columns Names of coulmns separated by comma
+	 * @return
+	 */
+	public RDBMS makeType(String table, String columns, String newType)
+	{
+		columns.split(",").each{String column->
+			String sqlStr = "alter table ${table} alter column ${column} ${newType}".toString()
 			getSql().execute(sqlStr);
 		}
 		return this;
@@ -185,6 +201,39 @@ class RDBMS {
 				return [it.key,it.value]
 			}
 		}
+		
+		return table
+	}
+	
+	public RDBMS h2AutoColumnsType(String table, int limit){
+		def dataTypes = [:].withDefault{'text'};
+		this.eachRow("select * from ${table} limit ${limit}"){GroovyResultSet grs, idx->
+			(1..grs.getMetaData().columnCount).each{int idxx->
+				String value = grs.getString(idxx);
+				String colName = $/"${grs.getMetaData().getColumnName(idxx)}"/$;
+				if (dataTypes[colName] == 'text') {
+					if ( value ==~ /[\-]*[0-9]+/) {
+						dataTypes[colName] = 'BIGINT';
+					}else if ( value ==~ /[\-]*[0-9]+[.][0-9]*/){
+						dataTypes[colName] = 'DOUBLE';
+					}
+				}else if (dataTypes[colName] == 'BIGINT') {
+					if ( value ==~ /[\-]*[0-9]+[.][0-9]*/){
+						dataTypes[colName] = 'DOUBLE';
+					}
+				}
+			}
+		}
+		def columnTypes = [:].withDefault{[]}
+		dataTypes.each{key,val->
+			columnTypes[val] << key
+		}
+		columnTypes.remove('text');
+		columnTypes.each{key, List val->
+			this.makeType(table, val.join(","),key)
+		}
+
+		return this;
 	}
 	
 	/**

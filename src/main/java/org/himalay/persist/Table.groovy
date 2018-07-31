@@ -16,6 +16,7 @@ class Table {
 	String  topLeft = $/ /$
 	String  keyColumnClass = 'keyColumnClass'
 	String  tableName = ''
+	String  csvDelim=","
 	/**
 	 * This closure will be invoked for each cell. The argument will be a map with two additional members:<br />
 	 * row: The name of the row <br />
@@ -170,7 +171,7 @@ class Table {
 		columns = orderColumns(columns)
 		
 		// Print header
-		String retVal = this.row +"," + columns.collect{header(it)}.join(",") +"\n"
+		String retVal = this.row +"," + columns.collect{header(it)}.join(this.csvDelim) +"\n"
 		retVal += table.collect{ it->
 			it.key+"," + columns.collect{col->
 				if ( eachCell == null)
@@ -186,7 +187,7 @@ class Table {
 						""
 					}
 				
-			}.join(",")
+			}.join(csvDelim)
 		}.join("\n")
 		
 	}

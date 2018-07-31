@@ -16,17 +16,17 @@ A library to base command line tools.
 <dependency>
 	    <groupId>com.github.krishnact</groupId>
 	    <artifactId>commandlinetool-base</artifactId>
-	    <version>0.4.5</version>
+	    <version>0.4.3</version>
 </dependency>
 ```
 See jitpack to learn how to used in other build tools.
-https://jitpack.io/#krishnact/commandlinetool-base/0.4.5
+https://jitpack.io/#krishnact/commandlinetool-base/0.4.3
 
 Example: Writing a simple URL Size counter, in Groovy.
 ```
 @Grapes([
         @GrabResolver(name='jitpack', root='https://jitpack.io'),
-        @Grab(group='com.github.krishnact', module='commandlinetool-base', version='0.4.5'),
+        @Grab(group='com.github.krishnact', module='commandlinetool-base', version='0.4.3'),
         @Grab(group='org.slf4j', module='slf4j-log4j12', version='1.7.7')
 ])
 import org.himalay.commandline.Option;
@@ -52,4 +52,25 @@ class URLBytesCounter extends CLTBase
                 CLTBase._main(new URLBytesCounter(), args);
         }
 }
+```
+
+Example of using SQL query
+```
+
+    import org.himalay.persist.RDBMS
+    import org.himalay.persist.Table
+    public static void main(String [] args){
+        String url ='https://data.ny.gov/api/views/sjc6-ftj4/rows.csv?accessType=DOWNLOAD';
+        File file = File.createTempFile("bbb", ".csv")
+        file.deleteOnExit();
+        file.text = new URL(url).text
+        RDBMS rdbms = RDBMS.h2Mem('bb',false);
+        rdbms.importCSV(file, 'broadband');
+        String table = 'broadband';
+        int limit = 20;
+        rdbms.h2AutoColumnsType(table, limit)
+        Table tbl = rdbms.toTable('SELECT sum("# Cable Providers") providers, County FROM BROADBAND group by county order by providers');
+        tbl.csvDelim = '|';
+        println tbl.toCSV();
+    }   
 ```
