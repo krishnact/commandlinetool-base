@@ -6,7 +6,7 @@ import java.lang.reflect.Modifier
 import java.util.Map
 
 
-import org.codehaus.groovy.tools.shell.commands.AliasTargetProxyCommand
+//import org.codehaus.groovy.tools.shell.commands.AliasTargetProxyCommand
 
 import org.codehaus.groovy.runtime.callsite.GetEffectivePogoFieldSite
 import org.omg.PortableInterceptor.AdapterNameHelper
@@ -109,25 +109,21 @@ trait AutoLogger {
 				String properCaseName = name.substring(0,1).toUpperCase() + name.substring(1)
 				def memVal = null
 				Class thisClazz = this.class
+				Logger ll = null;
 				if ((Modifier.PUBLIC & mem.modifiers ) !=0 ) // If public
 				{
 					Field fld = thisClazz.declaredFields.find{it.name == name}
-					Method set = thisClazz.declaredMethods.find{Method it -> it.name == "setLogger"}
-					Logger ll = (Logger) fld.get(this)
-					this.setLogger(ll)
+					ll = (Logger) fld.get(this)
 				}else{
 					Method method = thisClazz.declaredMethods.find{Method it -> it.name == "get${properCaseName}"}
-					Method set = thisClazz.declaredMethods.find{Method it -> it.name == "setLogger"}
-					//thisLogger = this."get${properCaseName}"()
-					Logger ll     = (Logger)method.invoke(this)
-					this.setLogger(ll)
+					ll     = (Logger)method.invoke(this)
 				}
-
+					this.setLogger(ll)
 				//thisLogger = memVal
 			}
 		}catch (Exception ex)
 		{
-			ex.printStackTrace()
+			thisLogger.info("Unable to set logger");
 		}
 		return thisLogger;
 	}
@@ -155,7 +151,9 @@ public class _LOGGER_HELPER{
 			log4j.appender.A1.layout.ConversionPattern=%d [%t] %-5p %c - %m%n
 			log4j.logger.org.apache=WARN
 			"""
-		PropertyConfigurator.configure(new ByteArrayInputStream(log4jText.bytes))
+		Properties ppp = new Properties()
+		ppp.load(new ByteArrayInputStream(log4jText.bytes))
+		PropertyConfigurator.configure(ppp)
 		
 		try {
 			File propsFile = new File(log4jProperties)

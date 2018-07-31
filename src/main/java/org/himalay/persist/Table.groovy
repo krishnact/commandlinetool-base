@@ -281,4 +281,12 @@ class Table {
 			addRowColumn(""+idx,colName,aData)
 		}
 	}
+	
+	/**
+	 * Getter for internal map
+	 * @return
+	 */
+	public def internalMap(){
+		return this.table;
+	}
 }

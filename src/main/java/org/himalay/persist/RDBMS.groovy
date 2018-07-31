@@ -8,35 +8,45 @@ import java.sql.ResultSetMetaData
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
+import groovy.sql.GroovyRowResult
 import groovy.sql.Sql;
 
 class RDBMS {
 	static Logger LOGGER = LoggerFactory.getLogger(RDBMS.class)
-	groovy.sql.Sql sql
+	private groovy.sql.Sql sql_
+	Connection connection;
 	def db = [:]
 
 	public Sql getSql() {
-		
-		if ( sql == null){
+		synchronized (this) {
+			if ( sql_ == null){
 			Sql.loadDriver(db.driver)
-			Connection connection = DriverManager.getConnection(db.url, db.user, db.password);
+			connection = DriverManager.getConnection(db.url, db.user, db.password);
 			//sql = Sql.newInstance(db.url, db.user, db.password, db.driver)
-			sql = new Sql(connection);
+			sql_ = new Sql(connection);
+			}
+			return sql_;
 		}
-		return sql;
 	}
 
-	RDBMS(String url, String user, String password, String driver) {
+	public void init_(){
+		synchronized (this) {
+			this.sql = null;
+			this.connection?.close()
+		}
+	}
+
+	public RDBMS(String url, String user, String password, String driver) {
 		db.url         = url       ;
 		db.user        = user      ;
 		db.password    = password  ;
 		db.driver      = driver    ;
 	}
 
-	RDBMS() {
+	public RDBMS() {
 		this(new File(System.getProperty("HIBERNATE_CONF")))
 	}
-	RDBMS(File hibernateCfgXml) {
+	public RDBMS(File hibernateCfgXml) {
 
 		XmlSlurper xmlSlurper = new XmlSlurper();
 		xmlSlurper.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
@@ -56,7 +66,7 @@ class RDBMS {
 	 * @param columns Names of coulmns separated by comma 
 	 * @return
 	 */
-	RDBMS makeNumeric(String table, String columns)
+	public RDBMS makeNumeric(String table, String columns)
 	{
 		columns.split(",").each{String column->
 			String sqlStr = "alter table ${table} alter column ${column} numeric".toString()
@@ -65,6 +75,22 @@ class RDBMS {
 		return this;
 	}
 	
+
+	/**
+	 * 
+	 * @param table
+	 * @param columns Names of coulmns separated by comma 
+	 * @return
+	 */
+	public RDBMS makeBigint(String table, String columns)
+	{
+		columns.split(",").each{String column->
+			String sqlStr = "alter table ${table} alter column ${column} bigint".toString()
+			getSql().execute(sqlStr);
+		}
+		return this;
+	}
+
 	public static RDBMS forEachRow(String hibernateConfigFileName , String sql, Closure itemAndIndex ){
 		File hibFile = new File(hibernateConfigFileName)
 		RDBMS rdbms = new RDBMS(hibFile)
@@ -73,8 +99,13 @@ class RDBMS {
 	}
 
 
+	/**
+	 * 
+	 * @param sql
+	 * @param itemAndIndex A closure that takes groovy.sql.GroovyResultSet and int as arguments
+	 */
 	public void eachRow(String sql, Closure itemAndIndex ){
-		LOGGER.info ("Executing ${sql}")
+		LOGGER.debug ("Executing ${sql}")
 		groovy.sql.Sql sqlTmp = getSql();
 		int idx = 0;
 		try{
@@ -89,11 +120,15 @@ class RDBMS {
 		}catch(Exception ex) {
 			LOGGER.error ex.toString()
 		}
-		//sqlTmp?.close();
 	}
 
+	/**
+	 * 
+	 * @param sql
+	 * @param itemAndIndex A closure that takes groovy.sql.GroovyRowResult and int as arguments
+	 */
 	public void forEachRow(String sql, Closure itemAndIndex ){
-		LOGGER.info ("Executing ${sql}")
+		LOGGER.debug ("Executing ${sql}")
 		groovy.sql.Sql sqlTmp = getSql();
 		int idx = 0;
 		try{
@@ -108,11 +143,26 @@ class RDBMS {
 		}catch(Exception ex) {
 			LOGGER.error ex.toString()
 		}
-		//sqlTmp?.close();
 	}
 
-	public static RDBMS h2Mem(String name) {
-		return new RDBMS("jdbc:h2:mem:${name}",'sa','',"org.h2.Driver");
+	/**
+	 * 
+	 * @param name
+	 * @param startServer If passed true, then database server will listen on 
+	 *                    http port 8082 and browser will be launched. The JDBC 
+	 *                    URL for connection is printed in log statement
+	 * @return
+	 */
+	public static RDBMS h2Mem(String name, boolean startServer = false) {
+		RDBMS retVal = new RDBMS("jdbc:h2:mem:${name}",'sa','',"org.h2.Driver");
+		if (startServer){
+			Class clz = Class.forName("org.h2.tools.Server");
+			
+			clz."createTcpServer"();
+			clz."main"();
+			LOGGER.info "Using ${retVal.db.url}, userName: ${retVal.db.user}"
+		}
+		return retVal;
 	}
 
 	/**
@@ -128,6 +178,15 @@ class RDBMS {
 		return this;
 	}
 
+	public Table toTable(String sql){
+		Table table = new Table('rowId','', true);
+		this.forEachRow(sql){GroovyRowResult grr, int idx->
+			table.table[idx]=grr.collectEntries{
+				return [it.key,it.value]
+			}
+		}
+	}
+	
 	/**
 	 * 
 	 * @param ResultSet

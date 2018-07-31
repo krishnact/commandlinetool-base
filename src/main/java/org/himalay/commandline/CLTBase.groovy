@@ -275,7 +275,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 			def proc = cmd.execute(env,new File(workFolder))
 			proc.consumeProcessOutput(sout, serr)
 			proc.waitFor()
-			return [out: sout , err: serr, , exitValue: proc.exitValue() ]
+			return [out: sout , err: serr, exitValue: proc.exitValue() ]
 		}else{ // This portion does not work yet
 			Process proc = null
 			Thread th = Thread.start {

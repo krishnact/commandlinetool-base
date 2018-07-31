@@ -14,10 +14,14 @@ class Cache extends RDBMS{
 	static Logger LOGGER = LoggerFactory.getLogger(Cache.class)
 	String tableName
 	static String CREATE_TABLE_sql =  "CREATE TABLE IF NOT EXISTS CachedItem (uid IDENTITY , key1 varchar(256), key2 varchar(256), value text(10000000), updatedAt TIMESTAMP, status number );"
+	Closure filler= null;
+	Closure expired = null
+	boolean deleteOnExpired = false; 
 	Cache(File hibernateCfgXml) {
 		super(hibernateCfgXml)
 	}
 
+	
 	Cache(String url, String user, String password, String driver, String tableName="CachedItem") {
 		super(url, user, password, driver);
 		this.tableName = tableName
@@ -38,8 +42,19 @@ class Cache extends RDBMS{
 		def row = getSql().rows("select * from CachedItem where key1=? and key2 =?", key1,  key2 )
 		if ( row.size() > 0) {
 			ret = new CachedItem(row[0]);
-		}else{
+			if (expired != null && expired.call(ret.updatedAt, ret) ){
 			ret = null;
+				if (deleteOnExpired == true){
+					getSql().execute('delete from CachedItem where key1=? and key2 =?',  key1,  key2);
+				}
+			}
+		}
+		if ( (ret == null) && filler != null){
+			String val = filler(key1, key2);
+			if ( insert(key1, key2, val) ){
+				ret = findMany(key1, key2)[0]
+			};
+			
 		}
 		
 		return ret;
@@ -84,30 +99,40 @@ class Cache extends RDBMS{
 	 * Saves an entry of the specified key2 of the specified key1
 	 */
 	public boolean save(String key1, String key2, String value, int status=2) {
+		try{
 		def row = getSql().rows('select * from CachedItem where key1=:foo AND key2=:bar', [foo:key1, bar:key2])
 		if ( row.size() == 0) {
 			LOGGER.info "Inserting data for key1 ${key1}/${key2}"
-			def ret = sql.executeInsert("insert into CachedItem (key1,key2,value,updatedAt,status) values(?,?,?,?,?)", key1, key2, value, Sql.TIMESTAMP(new Date()),status);
-			if ( ret.size() > 0) return true;
+			return insert(key1, key2, value,status)
 		}else{
 			int ret = sql.executeUpdate("update CachedItem set value=:value,updatedAt=:when, status=:status where key1=:foo AND key2=:bar",[value:value, when: Sql.TIMESTAMP(new Date()),status: status,foo:key1, bar:key2])
 			if (ret > 0) return true;
 		}
-
+		}catch(Exception ex){
+			this.init_();
+		}
 		return false;
 	}
 
+	
+	private boolean insert(String key1, String key2, String value, int status=2){
+		def ret = sql.executeInsert("insert into CachedItem (key1,key2,value,updatedAt,status) values(?,?,?,?,?)", key1, key2, value, Sql.TIMESTAMP(new Date()),status);
+		if ( ret.size() > 0) return true;
+	}
 	/**
 	 * Saves an CachedItem
 	 */
 	public boolean save(CachedItem ci) {
 		Date dd = new Date()
+		try{
 		int ret = sql.executeUpdate("update CachedItem set value=?,updatedAt=?, status=? where uid=?",ci.value, Sql.TIMESTAMP(dd), ci.status,ci.uid)
 		if (ret > 0) {
 			ci.updatedAt = dd
 			return true
 		};
-
+		}catch(Exception ex){
+			this.init_();
+		}
 		return false;
 	}
 
