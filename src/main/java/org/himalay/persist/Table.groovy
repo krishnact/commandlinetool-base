@@ -171,9 +171,9 @@ class Table {
 		columns = orderColumns(columns)
 		
 		// Print header
-		String retVal = this.row +"," + columns.collect{header(it)}.join(this.csvDelim) +"\n"
+		String retVal = this.row +this.csvDelim + columns.collect{header(it)}.join(this.csvDelim) +"\n"
 		retVal += table.collect{ it->
-			it.key+"," + columns.collect{col->
+			it.key+this.csvDelim + columns.collect{col->
 				if ( eachCell == null)
 				{
 					return it.value[col]

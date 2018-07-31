@@ -89,8 +89,9 @@ class CLTBase implements AutoConfig, AutoLogger{
 		OptionAccessor options  = cliBuilder_.parse(args);
 		if ( options == null){
 			examples()
+		}else{
+			assignArgs(options)
 		}
-		assignArgs(options)
 		return options
 	}
 	
