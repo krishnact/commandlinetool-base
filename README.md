@@ -32,7 +32,7 @@ Example: Writing a simple URL Size counter, in Groovy.
         @GrabExclude(group = 'org.codehaus.groovy', module='groovy-sql') ,
         @GrabExclude(group = 'org.codehaus.groovy', module='groovy-cli-commons')  ,
         @GrabExclude(group = 'org.codehaus.groovy', module='groovy-json')         ,
-        @GrabExclude(group = 'org.codehaus.groovy', module='groovy-xml)           ,
+        @GrabExclude(group = 'org.codehaus.groovy', module='groovy-xml')           ,
         @GrabExclude(group = 'org.codehaus.groovy', module='groovy-templates')
 ])
 import org.himalay.commandline.Option;
