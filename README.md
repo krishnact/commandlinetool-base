@@ -25,9 +25,15 @@ https://jitpack.io/#krishnact/commandlinetool-base/0.4.3
 Example: Writing a simple URL Size counter, in Groovy.
 ```
 @Grapes([
-        @GrabResolver(name='jitpack', root='https://jitpack.io'),
-        @Grab(group='com.github.krishnact', module='commandlinetool-base', version='0.4.3'),
-        @Grab(group='org.slf4j', module='slf4j-log4j12', version='1.7.7')
+        @GrabResolver(name='jitpack.io', root='https://jitpack.io'),
+        @Grab('org.slf4j:slf4j-log4j12:1.7.7'),
+        @Grab('com.h2database:h2:1.4.196'),
+        @Grab('com.github.krishnact:commandlinetool-base:0.4.6'),
+        @GrabExclude(group = 'org.codehaus.groovy', module='groovy-sql') ,
+        @GrabExclude(group = 'org.codehaus.groovy', module='groovy-cli-commons')  ,
+        @GrabExclude(group = 'org.codehaus.groovy', module='groovy-json')         ,
+        @GrabExclude(group = 'org.codehaus.groovy', module='groovy-xml)           ,
+        @GrabExclude(group = 'org.codehaus.groovy', module='groovy-templates')
 ])
 import org.himalay.commandline.Option;
 import org.himalay.commandline.CLTBase;
