@@ -5,7 +5,7 @@ import java.lang.reflect.Modifier
 import java.util.Map
 
 import org.apache.commons.lang3.exception.ExceptionUtils
-import org.apache.log4j.PropertyConfigurator
+//import org.apache.log4j.PropertyConfigurator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

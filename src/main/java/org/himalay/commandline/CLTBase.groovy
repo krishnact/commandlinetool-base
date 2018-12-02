@@ -11,7 +11,7 @@ import java.security.NoSuchAlgorithmException
 import java.util.Map
 
 class CLTBase implements AutoConfig, AutoLogger{
-	static String CREDENTIALS_FILE = System.getProperty("user.home")+ "/"+ $/etc/credentials.json/$ ;//new File()
+	static String CREDENTIALS_FILE = System.getProperty("user.home")+ "/"+ $/etc/credentials.json/$ ;
 	CliBuilder cliBuilder_ = null
 	public static void _main(CLTBase instance, String [] args)
 	{
@@ -21,6 +21,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 			System.exit(-1)
 		}else if (instance.verifyOptions(opt) == 0)
 		{
+			instance.preMain(args);
 			instance.realMain(opt);
 		}else{
 			instance.optionsVerificationFailed(opt, args);
@@ -41,6 +42,14 @@ class CLTBase implements AutoConfig, AutoLogger{
 		System.exit(-2)
 	}
 	
+	
+	/**
+	 * This function will be executed before the realMain
+	 */
+	protected void preMain(String [] args)
+	{
+		
+	}
 	
 	/**
 	 * This function will be executed after the realMain
