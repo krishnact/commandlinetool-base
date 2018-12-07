@@ -10,13 +10,26 @@ import java.lang.annotation.RetentionPolicy;
  */
 @Retention(value=RetentionPolicy.RUNTIME)
 public @interface Option {
-	String shortOpt     () default "_";
-	String longOpt      () default "";
-	String argName      () default "";
-	String description  () default "";
-	boolean required    () default false;
-	boolean optional    () default true;
-	int numberOfOptions () default 1;
+	String shortOpt      () default "_";
+	String longOpt       () default "";
+	String argName       () default "";
+	String description   () default "";
+	boolean required     () default false;
+	boolean optional     () default true;
+	int numberOfOptions  () default 1;
+	/**
+	 * What to do about existence of file.
+	 * 0 : Don't care.
+	 * 1 : Error out if file does not exist
+	 * 2 : Create the file if it does not exist
+	 * @return The value
+	 */
+	int fileExistence    () default 0;
+	/**
+	 * To indicate that file is actually a folder
+	 * @return The value
+	 */
+	boolean isFolder     () default false;
 	/**
 	 * The option must match this regex.
 	 * @return value

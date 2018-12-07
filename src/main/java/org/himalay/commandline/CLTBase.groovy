@@ -99,7 +99,10 @@ class CLTBase implements AutoConfig, AutoLogger{
 		if ( options == null){
 			examples()
 		}else{
-			assignArgs(options)
+			if ( assignArgs(options) == false){
+				optionsVerificationFailed(options, args);
+				options = null;
+			}
 		}
 		return options
 	}
@@ -164,9 +167,11 @@ class CLTBase implements AutoConfig, AutoLogger{
 	 * Can be optionally overwritten by derived classes to customize CLI parsing/assignment
 	 * @param options
 	 */
-	protected void assignArgs(OptionAccessor options)
+	protected boolean assignArgs(OptionAccessor options)
 	{
+		boolean retval = false;
 		if ( options != null){
+			retval = true;
 			this.class.declaredFields.each{Field aField->
 				aField.isAnnotationPresent(Option.class)
 				Option arg = aField.getAnnotation(Option.class)
@@ -232,6 +237,22 @@ class CLTBase implements AutoConfig, AutoLogger{
 								this."set${name}"(val as Float)
 							}else if (aField_type_name =="double"){
 								this."set${name}"(val as Double)
+							}else if (aField_type_name =="java.io.File"){
+								File file = new File(val);
+								if ( arg.fileExistence() == 0){
+									
+								}else if ( arg.fileExistence() == 1 && !file.exists()){
+									warn ("File ${file} does not exit")
+									retval = false
+								}else if ( arg.fileExistence() == 2 && !file.exists()){
+									if ( arg.isFolder()){
+										file.mkdirs()
+									}else{
+										file.parentFile.mkdirs()
+										file.text ="";
+									}
+								}
+								this."set${name}"(file)
 							}else{
 								this."set${name}"(val)
 							}
@@ -242,7 +263,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 				}
 			}
 		}
-
+		return retval
 	}
 	
 	

@@ -12,7 +12,6 @@ import javax.management.ObjectName
 import org.codehaus.groovy.runtime.callsite.GetEffectivePogoFieldSite
 import org.omg.PortableInterceptor.AdapterNameHelper
 
-import groovy.jmx.builder.JmxBeanFactory
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
 
@@ -29,7 +28,7 @@ trait AutoLogger {
 	private void initLogger() {
 		synchronized (this) {
 			if ( searchLogger() != null ) return;
-			
+
 			thisLogger = LoggerFactory.getLogger(AutoLogger.class);
 		}
 	}
@@ -45,15 +44,15 @@ trait AutoLogger {
 	public void error(String message) {
 		getLogger().error(message)
 	}
-	
+
 	public void warn(String message) {
 		getLogger().warn(message)
 	}
-	
+
 	public void trace(String message) {
 		getLogger().trace(message)
 	}
-	
+
 	public void info(String message, Throwable throwable) {
 		getLogger().info(message, throwable)
 	}
@@ -65,27 +64,27 @@ trait AutoLogger {
 	public void error(String message, Throwable throwable) {
 		getLogger().error(message, throwable)
 	}
-	
+
 	public void warn(String message, Throwable throwable) {
 		getLogger().warn(message, throwable)
 	}
-	
+
 	public void trace(String message, Throwable throwable) {
 		getLogger().trace(message, throwable)
 	}
-	
+
 	public Logger getLogger() {
 		Class.forName("org.himalay.commandline._LOGGER_HELPER")
 		if ( this.thisLogger == null) {
-				initLogger()
+			initLogger()
 		}
 		return thisLogger;
 	}
-	
+
 	public Logger setLogger(Logger logger) {
 		thisLogger = logger;
 	}
-	
+
 	public Logger searchLogger(){
 		// If a static logger has been declared then use that.
 		try{
@@ -111,7 +110,7 @@ trait AutoLogger {
 					Method method = thisClazz.declaredMethods.find{Method it -> it.name == "get${properCaseName}"}
 					ll     = (Logger)method.invoke(this)
 				}
-					this.setLogger(ll)
+				this.setLogger(ll)
 				//thisLogger = memVal
 			}
 		}catch (Exception ex)
@@ -186,17 +185,17 @@ public class _LOGGER_HELPER{
 			}
 
 		}else{
-		String log4jProperties = System.getProperty("_LOG4J_PROPERTIES");
-		if ( log4jProperties == null) {
-			log4jProperties = System.getenv("_LOG4J_PROPERTIES");
-			if (log4jProperties == null){
-				log4jProperties ="./conf/log4j.properties"
+			String log4jProperties = System.getProperty("_LOG4J_PROPERTIES");
+			if ( log4jProperties == null) {
+				log4jProperties = System.getenv("_LOG4J_PROPERTIES");
+				if (log4jProperties == null){
+					log4jProperties ="./conf/log4j.properties"
+				}
 			}
-		}
-		Properties props = new Properties();
-		def logLevel = System.getenv()["__LOGLEVEL"]
-		if (logLevel == null ) logLevel='INFO'
-		String log4jText = """
+			Properties props = new Properties();
+			def logLevel = System.getenv()["__LOGLEVEL"]
+			if (logLevel == null ) logLevel='INFO'
+			String log4jText = """
 			log4j.rootLogger=${logLevel}, A1
 			
 			log4j.appender.A1=org.apache.log4j.ConsoleAppender
@@ -205,27 +204,30 @@ public class _LOGGER_HELPER{
 			log4j.appender.A1.layout.ConversionPattern=%d [%t] %-5p %c - %m%n
 			log4j.logger.org.apache=DEBUG
 			"""
-		Properties ppp = new Properties()
-		ppp.load(new ByteArrayInputStream(log4jText.bytes))
+			Properties ppp = new Properties()
+			ppp.load(new ByteArrayInputStream(log4jText.bytes))
 			Class properyCOnfigureator = Class.forName("org.apache.log4j.PropertyConfigurator").configure(ppp)
 
-		
-		try {
-			File propsFile = new File(log4jProperties)
-			if ( propsFile.size() > 16) // Zero size files can be a problem sometimes.
-			{
-				props.load(new FileInputStream(propsFile));
+
+			try {
+				File propsFile = new File(log4jProperties)
+				if ( propsFile.size() > 16) // Zero size files can be a problem sometimes.
+				{
+					props.load(new FileInputStream(propsFile));
 					Class.forName('org.apache.log4j.PropertyConfigurator').configure(props);
-			}else{
-				if ( System.getenv()['__QUIET'] == null){
-					_LOGGER.info("Continuing with default log4j properties")
+					_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
+				}else{
+					if ( System.getenv()['__QUIET'] == null){
+						_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
+						_LOGGER.info("Continuing with default log4j properties")
+					}
 				}
-			}
-		} catch (Exception e) {
+			} catch (Exception e) {
 				Class.forName('org.apache.log4j.PropertyConfigurator').configure(new ByteArrayInputStream(log4jText.bytes))
+				_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
 				_LOGGER.info("While reading config file ${log4jProperties}", e) ;
-			_LOGGER.info("Continuing with default log4j properties")
-		}
+				_LOGGER.info("Continuing with default log4j properties")
+			}
 
 			//Get the MBean server
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -237,7 +239,7 @@ public class _LOGGER_HELPER{
 		}
 	}
 
-	}
+}
 
 
 public class _LOGGER_HELPER_{
