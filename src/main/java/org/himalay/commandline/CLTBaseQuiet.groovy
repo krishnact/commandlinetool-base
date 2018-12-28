@@ -5,9 +5,13 @@ import org.slf4j.Logger
 
 class CLTBaseQuiet extends org.himalay.commandline.CLTBase{
 
+	public CLTBaseQuiet(Map confData = null)
+	{
+		super(confData)
+	}
 
-	public Object init(boolean quiet) {
-		return super.init(quiet);
+	public Object initAutoConf(boolean quiet) {
+		return super.initAutoConf(quiet);
 	}
 
 	public Map<String, Object> addConf(Map<String, Object> conf) {
@@ -97,5 +101,15 @@ class CLTBaseQuiet extends org.himalay.commandline.CLTBase{
 	@Override
 	public void error(String message) {
 		super.error(message)
+	}
+
+	@Override
+	public Object initConf(String confFilePath, boolean quiet) {
+		return super.initConf(confFilePath,quiet);
+	}
+
+	@Override
+	public Map<String, Object> setConf(Map<String, Object> newConf) {
+		return super.setConf(newConf)
 	}
 }

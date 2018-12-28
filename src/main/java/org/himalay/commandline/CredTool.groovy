@@ -1,11 +1,12 @@
 package org.himalay.commandline;
 
 import groovy.json.JsonBuilder
-import groovy.util.OptionAccessor
+import groovy.cli.commons.CliBuilder;
+import groovy.cli.commons.OptionAccessor;
 
 public class CredTool extends CLTBaseQuiet{
 
-	@Option(required = true, description= 'The passphrase')
+	@Option(description= 'The passphrase')
 	String passphrase;
 
 	@Option(description= 'The old passphrase')
@@ -23,26 +24,33 @@ public class CredTool extends CLTBaseQuiet{
 	@Option(required=true, regex='set|reencrypt|dump')
 	String action
 	
-
+	//String initVector = '1234567890123456';
+	
 	public void preMain(String[] args){
-		//credJsonFile = new File(this.credFile.path)
-		
 	}
 	
 	public String getSecret(String name){
 		def json = new Util().getJsonConf(credFile.path)
-		String base64 = json[name]
+		String base64 = Eval.x(json,"x.${name}")
+		String retVal = null;
 		if (base64 == null){
 			warn ("No sercret with name ${name}")
 		}else{
-			return Util.decrypt(this.passphrase,base64);
+			retVal = Util.decrypt(this.passphrase,base64);
+			if (! retVal.startsWith('000000')){
+				retVal = null;
+			}else{
+				retVal = retVal.substring(6);
+			}
 		}
+		
+		return retVal;
 	}
 	
 	public void setSecret(String name, String secret){
 		def json = new Util().getJsonConf(credFile.path)
-		String base64 = Util.encrypt(this.passphrase,secret);
-		json[name] = base64;
+		String base64 = Util.encrypt(this.passphrase,('000000'+secret).bytes);
+		Eval.x(json,"x.${name} ='${base64}'")
 		credFile.text = new JsonBuilder(json).toPrettyString();
 	}
 	
@@ -59,11 +67,11 @@ public class CredTool extends CLTBaseQuiet{
 	
 	private void dump(){
 		def json = new Util().getJsonConf(credFile.path)
-		json.keySet().each{
+		json.keySet().findAll{name == it || name == null}.each{
 			String base64 = json[it];
 			String clear = Util.decrypt(this.passphrase,base64);
 			//clear = new String(clear.decodeBase64());
-			info "${name}=${clear}"
+			info "${name}=${clear?.substring(6)}"
 		}
 	}
 	
@@ -77,7 +85,9 @@ public class CredTool extends CLTBaseQuiet{
 		json.keySet().each{
 			String base64 = json[it];
 			String clear = Util.decrypt(this.oldPassphrase,base64);
-			newJson[it]  = Util.encrypt(this.passphrase, clear);
+			if (clear != null && clear.startsWith('000000')){
+				newJson[it]  = Util.encrypt(this.passphrase,clear.bytes);
+			}
 		}
 		credFile.text = new JsonBuilder(newJson).toPrettyString();
 	}

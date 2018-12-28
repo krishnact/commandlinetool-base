@@ -2,14 +2,19 @@ package org.himalay.commandline
 
 
 import groovy.lang.Closure
-import groovy.util.OptionAccessor
 
 import java.io.File
+import java.lang.management.ManagementFactory
 import java.lang.reflect.Field
+import java.lang.reflect.Method
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.Map
 
+import javax.management.MBeanServer
+import javax.management.ObjectName
+import groovy.cli.commons.CliBuilder;
+import groovy.cli.commons.OptionAccessor;
 class CLTBase implements AutoConfig, AutoLogger{
 	static String CREDENTIALS_FILE = System.getProperty("user.home")+ "/"+ $/etc/credentials.json/$ ;
 	CliBuilder cliBuilder_ = null
@@ -65,9 +70,12 @@ class CLTBase implements AutoConfig, AutoLogger{
 		return 0;
 	}
 	
-	CLTBase()
+	CLTBase(Map confData = null)
 	{
-		
+		initAutoConf(true)
+		if ( confData != null){
+			this.addConf(confData);
+		}
 	}
 	
 	/**
@@ -90,14 +98,21 @@ class CLTBase implements AutoConfig, AutoLogger{
 	/**
 	 * The default implementation adds options for any variable having Arg annotation.
 	 * @param args
-	 * @return
+	 * @return OptionAccessor
 	 */
 		protected OptionAccessor parseArgs(String... args) {
 		this.cliBuilder_ = getCliBuilder();
 		fillCli(cliBuilder_);
 		OptionAccessor options  = cliBuilder_.parse(args);
-		if ( options == null){
-			examples()
+		Object inner = null;
+		try{
+			inner = options?.getCommandLine()
+		}catch(Exception ex){
+			
+		}
+		if ( options == null ) {// || inner == null){
+			examples();
+			options = null;
 		}else{
 			if ( assignArgs(options) == false){
 				optionsVerificationFailed(options, args);
@@ -181,7 +196,10 @@ class CLTBase implements AutoConfig, AutoLogger{
 					
 					String name = aField.name.substring(0,1).toUpperCase()+ aField.name.substring(1)
 					Object val = options."${aField.name}"
-					String valClassName = val.class.name
+					if (val == null){
+						val = this.getConf()[name];
+					}
+					String valClassName = val?.class.name
 					String aField_type_name = aField.type.name
 					def fieldClass = aField.clazz
 					if (
@@ -200,7 +218,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 								}else{
 									warn(msg)
 								}
-						}else if ( val != null){
+						}else if (val != null){
 							if ( (val instanceof List<String> ) && arg.extend() == true)
 							{
 								List<String> listVal = [] as ArrayList<String>
@@ -416,5 +434,98 @@ class CLTBase implements AutoConfig, AutoLogger{
 		
 	}
 	
+	/**
+	 * Exposes getter/setter and ExposeToJmx annotated methods to JMX.
+	 * At runtime, the JMX methods can be expose as REST APIs using jolokia just by passing -javaagent=jolokia.jar
+	 * @arg printClass if this is true then the JMX supporting classes will be printed as debug level
+	 */
+	public void exposeToJmx(boolean printClass = false){
+		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+		Method[] methods = this.class.getMethods().findAll{Method method->
+			
+			boolean annotated = method.annotations.any{
+				it.annotationType() == ExposeToJmx.class
+				}
+			boolean getSet    =  ( ( method.name.startsWith('set') || method.name.startsWith('get')) && (method.getDeclaringClass() == this.class))
+			
+			return annotated || getSet
+		}
+		
+		def signatures = [] as ArrayList<String>
+		def impls = [] as ArrayList<String>
+		methods.each{aMethod->
+			String sig = aMethod.toString()
+			info sig
+			String[] parts = sig.split(/\(|\)/);
+			//if ( parts[0].split (" ")[-1].startsWith(this.class.name) ){
+				String decaringClassName = aMethod.getDeclaringClass().name 
+				sig = parts[0].replaceFirst(" "+decaringClassName+"."," ")
+				sig = sig
+				String args = ""
+				String invokations = ""
+				if (parts.length > 1){
+					int idx = 0;
+					args = parts[1].split(",").collect {String argType->
+						"${argType} arg${idx++}"
+					}.join(',')
+					idx = 0;
+					invokations = parts[1].split(",").collect {String argType->
+						"arg${idx++}"
+					}.join(',')
+					
+				}
+				sig = sig +"("+args+")"
+				signatures << sig
+				String returnType = aMethod.getReturnType().toString();
+				String impl = sig +"{" + (returnType =='void' ? "" : "return ")+ "this.delegateObj.${aMethod.name}("+invokations + ")}";
+				impls << impl
+			//}
+			
+		}
+		
+		String interfaceDef = """
+			${this.class.package.toString()};
+			public interface ${this.class.simpleName}_JmxMBean{
+				${signatures.join(";\n")};
+			};
+		"""
+		
+		String impleDef = """
+		${this.class.package.toString()};
+		public class ${this.class.simpleName}_Jmx extends org.himalay.commandline.CLTBaseQuiet implements ${this.class.simpleName}_JmxMBean{
+			${this.class.simpleName}_Jmx(${this.class.name} deleg){
+				this.delegateObj = deleg
+			}
+			${this.class.simpleName} delegateObj
+            ${impls.join("\n")}
+		}
+		"""
+		if (printClass){
+			trace interfaceDef
+			trace impleDef
+		}
+		
+		GroovyClassLoader loader = new GroovyClassLoader( this.class.classLoader);
+		Class cls1 = loader.parseClass(interfaceDef)
+		Object cls2 = loader.parseClass(impleDef).newInstance(this)
+		//Object cls2 = new Opts_Jmx();
+		ObjectName name = new ObjectName("${this.class.name}:type=autombeans");
+		mbs.registerMBean(cls2, name);
+		debug "Registered to JMX"
+	}
+	
+	/**
+	 * Re read the config file
+	 * @param confFilePath
+	 */
+	@ExposeToJmx
+	public void refreshConf(String confFilePath){
+		debug "Refreshing conf file"
+		initAutoConf(true);
+	}
+	
+	public void configRead(){
+		debug "Config file read"
+	}
 }
 

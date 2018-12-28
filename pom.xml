@@ -5,7 +5,7 @@
 	<artifactId>commandlinetool-base</artifactId>
 	<groupId>com.github.krishnact</groupId>
 
-	<version>0.4.8</version>
+	<version>0.4.9</version>
 	<repositories>
 		<repository>
 			<id>jitpack.io</id>
@@ -79,12 +79,6 @@
 					</dependency>
 				</dependencies>
 			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.5.1</version>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
@@ -143,7 +137,7 @@
 			<groupId>commons-cli</groupId>
 			<artifactId>commons-cli</artifactId>
 			<version>1.3.1</version>
-		</dependency>
+		</dependency-->
 		<dependency>
 			<groupId>org.codehaus.groovy</groupId>
 			<artifactId>groovy-sql</artifactId>
