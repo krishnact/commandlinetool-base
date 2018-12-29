@@ -188,17 +188,21 @@ class CLTBase implements AutoConfig, AutoLogger{
 		if ( options != null){
 			retval = true;
 			this.class.declaredFields.each{Field aField->
-				aField.isAnnotationPresent(Option.class)
+				//aField.isAnnotationPresent(Option.class)
 				Option arg = aField.getAnnotation(Option.class)
 				
 				if ( arg != null )
 				{
 					
 					String name = aField.name.substring(0,1).toUpperCase()+ aField.name.substring(1)
-					Object val = options."${aField.name}"
+					//Object val = options.getProperty(aField.name)
+					
+					Object val = options.getOptionValue(aField.name);
 					if (val == null){
-						val = this.getConf()[name];
+						trace "Trying value from config for ${aField.name}"
+						val = this.getConf()[aField.name];
 					}
+					if ( val != null) {
 					String valClassName = val?.class.name
 					String aField_type_name = aField.type.name
 					def fieldClass = aField.clazz
@@ -222,7 +226,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 							if ( (val instanceof List<String> ) && arg.extend() == true)
 							{
 								List<String> listVal = [] as ArrayList<String>
-								val.each{aVal->
+								val.each{String aVal->
 									if (aVal.startsWith("=")){
 										//A file has been specified. Use contents from the file
 										new File(aVal.substring(1)).eachLine{String aLine->
@@ -277,6 +281,9 @@ class CLTBase implements AutoConfig, AutoLogger{
 							
 							debug("Assigned ${aField.name}=${val}")
 						}
+					}
+					}else {
+						trace "Using default value for ${aField.name}"
 					}
 				}
 			}
