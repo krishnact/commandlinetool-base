@@ -88,6 +88,14 @@ trait AutoConfig extends AutoLogger{
 		return this.config
 	}
 
+	public Object getConfVal(String confKey) {
+		//Eval.x(json,"x.${name} ='${base64}'")
+		def confMap = this.getConf();
+		return Util.getConfVal(confMap, confKey);
+	}
+	
+
+	
 	Map<String, Object> setConf(Map<String, Object> newConf) {
 		synchronized (this) {
 			this.conf = newConf

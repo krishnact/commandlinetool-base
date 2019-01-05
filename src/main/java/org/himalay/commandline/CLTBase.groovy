@@ -13,9 +13,14 @@ import java.util.Map
 
 import javax.management.MBeanServer
 import javax.management.ObjectName
+
+import org.slf4j.LoggerFactory
+import org.slf4j.Logger
+
 import groovy.cli.commons.CliBuilder;
 import groovy.cli.commons.OptionAccessor;
 class CLTBase implements AutoConfig, AutoLogger{
+	public static Logger LOGGER = LoggerFactory.getLogger(this.class);
 	static String CREDENTIALS_FILE = System.getProperty("user.home")+ "/"+ $/etc/credentials.json/$ ;
 	CliBuilder cliBuilder_ = null
 	public static void _main(CLTBase instance, String [] args)
@@ -114,6 +119,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 			examples();
 			options = null;
 		}else{
+			assignConfValues(this,getConf());
 			if ( assignArgs(options) == false){
 				optionsVerificationFailed(options, args);
 				options = null;
@@ -145,11 +151,18 @@ class CLTBase implements AutoConfig, AutoLogger{
 				String argName  = arg.argName     ()==""? longOpt:arg.argName     ()
 				debug("Adding ${longOpt}, argName =${argName}, numberOfArgs=${arg.numberOfOptions()}")
 				String desc = arg.description ()==""? aField.name:arg.description ()
-				// If a regex is specified then add that to description.
 				if (desc[-1] != '.'){
 					desc = desc +'.'
 				}
 
+				if (arg.required () ){
+					trace "Adding required marker"
+					desc = '*' + desc
+				}else {
+					desc = ' ' + desc
+				}
+				
+				// If a regex is specified then add that to description.
 				if (arg.regex() != '(.)*')
 				{
 					desc += " Possible values: ${arg.regex()}."
@@ -178,6 +191,90 @@ class CLTBase implements AutoConfig, AutoLogger{
 		cli.setWidth(maxOptionLength +130);
 	}
 	
+	
+
+	/**
+	 * Reads and assigns values from conf file to all the members that are annotated with Configure annotation
+	 * @return
+	 */
+	public static boolean assignConfValues(Object object, Map conf) {
+		boolean retval = true;
+		object.class.declaredFields.each{Field aField->
+			Configure confVal = aField.getAnnotation(Configure.class)
+			if ( confVal != null )
+			{
+
+				String name = aField.name.substring(0,1).toUpperCase()+ aField.name.substring(1)
+				Object val = null
+
+				LOGGER.trace "Trying value from config for ${aField.name}"
+				String key = confVal.key();
+				if ( key == '') {
+					key = aField.getName();
+				}
+				val = Util.getConfVal(conf,key);
+				
+				if ( val != null) {
+					String valClassName = val?.class.name
+					String aField_type_name = aField.type.name
+					def fieldClass = aField.clazz
+					if (
+					valClassName!= 'java.lang.Boolean' ||
+					( aField.type.name =='boolean' && valClassName == 'java.lang.Boolean' )
+					)
+					{
+						if (!( val ==~ confVal.regex()))
+						{
+							String msg = "${name} does not match ${confVal.regex()}"
+							LOGGER.warn(msg)
+						}else if (val != null){
+							if ( aField_type_name =="java.lang.String" ){
+								object."set${name}"(val as String)
+							}else if ( aField_type_name =="int"){
+								object."set${name}"(val as Integer)
+							}else if ( aField_type_name =="long"){
+								object."set${name}"(val as Long)
+							}else if ( aField_type_name =="short"){
+								object."set${name}"(val as Short)
+							}else if (aField_type_name =="byte"){
+								object."set${name}"(val as Byte)
+							}else if (aField_type_name =="char"){
+								object."set${name}"(val as Character)
+							}else if ( aField_type_name =="float"){
+								object."set${name}"(val as Float)
+							}else if (aField_type_name =="double"){
+								object."set${name}"(val as Double)
+							}else if (aField_type_name =="java.io.File"){
+								File file = new File(val);
+								if ( confVal.fileExistence() == 0){
+
+								}else if ( confVal.fileExistence() == 1 && !file.exists()){
+									LOGGER.warn ("File ${file} does not exit")
+									retval = false
+								}else if ( confVal.fileExistence() == 2 && !file.exists()){
+									if ( confVal.isFolder()){
+										file.mkdirs()
+									}else{
+										file.parentFile.mkdirs()
+										file.text ="";
+									}
+								}
+								object."set${name}"(file)
+							}else{
+								object."set${name}"(val)
+							}
+
+							LOGGER.debug("Assigned ${aField.name}=${val}")
+						}
+					}
+				}else {
+					LOGGER.trace "Using default value for ${aField.name}"
+				}
+			}
+		}
+
+		return retval
+	}
 	/**
 	 * Can be optionally overwritten by derived classes to customize CLI parsing/assignment
 	 * @param options
@@ -190,7 +287,6 @@ class CLTBase implements AutoConfig, AutoLogger{
 			this.class.declaredFields.each{Field aField->
 				//aField.isAnnotationPresent(Option.class)
 				Option arg = aField.getAnnotation(Option.class)
-				
 				if ( arg != null )
 				{
 					
@@ -409,12 +505,12 @@ class CLTBase implements AutoConfig, AutoLogger{
 	
 	/**
 	 * Get credentials from JSON credentials file (default is ~/etc/credentials.json)
-	 * @param server
+	 * @param key
 	 * @return
 	 */
-	public def getCredentials(String server, String credentialsFile=CREDENTIALS_FILE)
+	public def getCredentials(String key, String credentialsFile=CREDENTIALS_FILE)
 	{
-		def cred = new groovy.json.JsonSlurper().parse(new File(credentialsFile))[server]
+		def cred = new groovy.json.JsonSlurper().parse(new File(credentialsFile))[key]
 		return cred
 	}
 

@@ -9,7 +9,7 @@ import javax.crypto.spec.SecretKeySpec
 import groovy.json.JsonSlurper
 
 class Util implements AutoLogger {
-	private static String KEY_PAD= "ABCDEFGHIJKLMNOP";
+	//private static String KEY_PAD= "ABCDEFGHIJKLMNOP";
 	
 	public def getJsonConf(String confFilePath, boolean quiet = true)
 	{
@@ -62,10 +62,11 @@ class Util implements AutoLogger {
 	
 	public static String encrypt(String key, String initVector, byte[] value) {
 		try {
-			key = (key + KEY_PAD).substring(0,16)
+			//key = (key + KEY_PAD).substring(0,16)
+			key = key.md5()
 			byte[] initVectorBytes = initVector.getBytes("UTF-8")
 			IvParameterSpec iv = new IvParameterSpec(initVectorBytes);
-			SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "AES");
+			SecretKeySpec skeySpec = new SecretKeySpec(key.decodeHex(), "AES");
 
 			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
@@ -85,9 +86,9 @@ class Util implements AutoLogger {
 	
 	public static String decrypt(String key, String initVector, byte[] encrypted) {
 		try {
-			key = (key + KEY_PAD).substring(0,16)
+			key = key.md5()
 			IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
-			SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "AES");
+			SecretKeySpec skeySpec = new SecretKeySpec(key.decodeHex(), "AES");
 
 			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
@@ -102,4 +103,8 @@ class Util implements AutoLogger {
 		return null;
 	}
 
+	public static Object getConfVal(Map confMap, String confKey) {
+		Object retVal = Eval.x(confMap,"x.${confKey}")
+		return retVal;
+	}
 }
