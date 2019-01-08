@@ -128,6 +128,25 @@ class CLTBase implements AutoConfig, AutoLogger{
 		return options
 	}
 	
+	protected Map<String,String> getOptionName(Field aField) {
+		Option arg = aField.getAnnotation(Option.class)
+		String aField_type_name = aField.type.name
+		String longOpt = arg.longOpt     ()==""? aField.name    :arg.longOpt     ()
+		boolean isList = false;
+		if ( longOpt.endsWith("s") && aField_type_name =='java.util.List')
+		{
+			longOpt = longOpt.substring(0, longOpt.length() -1);
+			isList = true
+		}
+		String shortOpt = arg.shortOpt()
+		String argName  = arg.argName     ()==""? longOpt:arg.argName     ()
+		String optionName = argName;
+		if ( isList) {
+			optionName = optionName+'s';
+		}
+		return [argName:argName, longOpt: longOpt,isList : isList, optionName: optionName ];
+	}
+	
 	/**
 	 * Can be optionally overwritten by derived classes to customize CLI parsing
 	 *
@@ -136,25 +155,22 @@ class CLTBase implements AutoConfig, AutoLogger{
 	{
 		int maxOptionLength = 0;
 		this.class.declaredFields.each{Field aField->
-			aField.isAnnotationPresent(Option.class)
+			//aField.isAnnotationPresent(Option.class)
 			Option arg = aField.getAnnotation(Option.class)
 			String aField_type_name = aField.type.name
 			def fieldClass = aField.clazz
 			if ( arg != null )
-			{				// Add to cli
-				String longOpt = arg.longOpt     ()==""? aField.name    :arg.longOpt     ()
-				if ( longOpt.endsWith("s") && aField_type_name =='java.util.List')
-				{
-					longOpt = longOpt.substring(0, longOpt.length() -1)
-				}
-				String shortOpt = arg.shortOpt()
-				String argName  = arg.argName     ()==""? longOpt:arg.argName     ()
+			{	// Add to cli
+				Map<String,String> optAndArgName = getOptionName(aField);
+				String longOpt = optAndArgName.longOpt  
+				String argName  = optAndArgName.argName 
+				
 				debug("Adding ${longOpt}, argName =${argName}, numberOfArgs=${arg.numberOfOptions()}")
 				String desc = arg.description ()==""? aField.name:arg.description ()
 				if (desc[-1] != '.'){
 					desc = desc +'.'
 				}
-
+				
 				if (arg.required () ){
 					trace "Adding required marker"
 					desc = '*' + desc
@@ -168,6 +184,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 					desc += " Possible values: ${arg.regex()}."
 				}
 				
+
 				// See if there is a default value
 				String properCaseName = aField.name.substring(0,1).toUpperCase()+ aField.name.substring(1)
 				def currVal = this."get${properCaseName}"()
@@ -292,8 +309,12 @@ class CLTBase implements AutoConfig, AutoLogger{
 					
 					String name = aField.name.substring(0,1).toUpperCase()+ aField.name.substring(1)
 					//Object val = options.getProperty(aField.name)
-					
-					Object val = options.getOptionValue(aField.name);
+					Map<String,String> optAndArgName = getOptionName(aField);
+					String longOpt = optAndArgName.longOpt
+					String argName  = optAndArgName.argName
+
+					//Object val = options.getOptionValue(optAndArgName.fieldName);
+					Object val = options.getProperty(optAndArgName.optionName);
 					if (val == null){
 						trace "Trying value from config for ${aField.name}"
 						val = this.getConf()[aField.name];
