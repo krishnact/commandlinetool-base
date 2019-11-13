@@ -70,9 +70,7 @@ class CLTBaseQuiet extends org.himalay.commandline.CLTBase{
 		return super.toString();
 	}
 
-	public String makeTemplate(String templateText, Object bindings) {
-		return super.makeTemplate(templateText, bindings);
-	}
+
 	public void info(String message, Throwable throwable)
 	{
 		super.info(message, throwable)

@@ -22,7 +22,8 @@ import groovy.cli.commons.OptionAccessor;
 class CLTBase implements AutoConfig, AutoLogger{
 	public static Logger LOGGER = LoggerFactory.getLogger(this.class);
 	static String CREDENTIALS_FILE = System.getProperty("user.home")+ "/"+ $/etc/credentials.json/$ ;
-	CliBuilder cliBuilder_ = null
+	protected CliBuilder cliBuilder_ = null
+	protected OptionAccessor opt = null;
 	public static void _main(CLTBase instance, String [] args)
 	{
 		OptionAccessor opt = instance.parseArgs(args);
@@ -107,7 +108,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 	 */
 		protected OptionAccessor parseArgs(String... args) {
 		this.cliBuilder_ = getCliBuilder();
-		fillCli(cliBuilder_);
+		fillCli(this,cliBuilder_);
 		OptionAccessor options  = cliBuilder_.parse(args);
 		Object inner = null;
 		try{
@@ -120,7 +121,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 			options = null;
 		}else{
 			assignConfValues(this,getConf());
-			if ( assignArgs(options) == false){
+			if ( assignArgs(this,options,getConf()) == false){
 				optionsVerificationFailed(options, args);
 				options = null;
 			}
@@ -128,7 +129,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 		return options
 	}
 	
-	protected Map<String,String> getOptionName(Field aField) {
+	public static Map<String,String> getOptionName(Field aField) {
 		Option arg = aField.getAnnotation(Option.class)
 		String aField_type_name = aField.type.name
 		String longOpt = arg.longOpt     ()==""? aField.name    :arg.longOpt     ()
@@ -151,10 +152,10 @@ class CLTBase implements AutoConfig, AutoLogger{
 	 * Can be optionally overwritten by derived classes to customize CLI parsing
 	 *
 	 */
-	protected void fillCli(CliBuilder cli)
+	public static void fillCli(Object obj, CliBuilder cli)
 	{
 		int maxOptionLength = 0;
-		this.class.declaredFields.each{Field aField->
+		obj.class.declaredFields.each{Field aField->
 			//aField.isAnnotationPresent(Option.class)
 			Option arg = aField.getAnnotation(Option.class)
 			String aField_type_name = aField.type.name
@@ -165,14 +166,14 @@ class CLTBase implements AutoConfig, AutoLogger{
 				String longOpt = optAndArgName.longOpt  
 				String argName  = optAndArgName.argName 
 				
-				debug("Adding ${longOpt}, argName =${argName}, numberOfArgs=${arg.numberOfOptions()}")
+				LOGGER.debug("Adding ${longOpt}, argName =${argName}, numberOfArgs=${arg.numberOfOptions()}")
 				String desc = arg.description ()==""? aField.name:arg.description ()
 				if (desc[-1] != '.'){
 					desc = desc +'.'
 				}
 				
 				if (arg.required () ){
-					trace "Adding required marker"
+					LOGGER.trace "Adding required marker"
 					desc = '*' + desc
 				}else {
 					desc = ' ' + desc
@@ -187,7 +188,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 
 				// See if there is a default value
 				String properCaseName = aField.name.substring(0,1).toUpperCase()+ aField.name.substring(1)
-				def currVal = this."get${properCaseName}"()
+				def currVal = obj."get${properCaseName}"()
 				if ( currVal != null){
 					desc = desc + " Default: ${currVal}"
 				}
@@ -296,12 +297,12 @@ class CLTBase implements AutoConfig, AutoLogger{
 	 * Can be optionally overwritten by derived classes to customize CLI parsing/assignment
 	 * @param options
 	 */
-	protected boolean assignArgs(OptionAccessor options)
+	public static boolean assignArgs(Object obj, OptionAccessor options, def confMap)
 	{
 		boolean retval = false;
 		if ( options != null){
 			retval = true;
-			this.class.declaredFields.each{Field aField->
+			obj.class.declaredFields.each{Field aField->
 				//aField.isAnnotationPresent(Option.class)
 				Option arg = aField.getAnnotation(Option.class)
 				if ( arg != null )
@@ -316,8 +317,8 @@ class CLTBase implements AutoConfig, AutoLogger{
 					//Object val = options.getOptionValue(optAndArgName.fieldName);
 					Object val = options.getProperty(optAndArgName.optionName);
 					if (val == null){
-						trace "Trying value from config for ${aField.name}"
-						val = this.getConf()[aField.name];
+						LOGGER.trace "Trying value from config for ${aField.name}"
+						val = confMap[aField.name];
 					}
 					if ( val != null) {
 					String valClassName = val?.class.name
@@ -332,12 +333,12 @@ class CLTBase implements AutoConfig, AutoLogger{
 						{
 						}else if (!( val ==~ arg.regex()))
 						{
-								String msg = "${name} does not match ${arg.regex()}"
+								String msg = "${argName} does not match ${arg.regex()}"
 								if (arg.required() == true)
 								{
 									throw new IllegalArgumentException(msg) 		
 								}else{
-									warn(msg)
+									LOGGER.warn(msg)
 								}
 						}else if (val != null){
 							if ( (val instanceof List<String> ) && arg.extend() == true)
@@ -354,34 +355,34 @@ class CLTBase implements AutoConfig, AutoLogger{
 									}
 								}
 								val = listVal
-								this."set${name}"(val)
+								obj."set${name}"(val)
 							}else if ( aField_type_name =="java.lang.String" && arg.extend() == true){
 								if (val.startsWith("=")){
 									//A file has been specified. Use contents from the file
-									this."set${name}"(new File(val.substring(1)).text)
+									obj."set${name}"(new File(val.substring(1)).text)
 								}else{
-									this."set${name}"(val as String)
+									obj."set${name}"(val as String)
 								}
 							}else if ( aField_type_name =="int"){
-								this."set${name}"(val as Integer)
+								obj."set${name}"(val as Integer)
 							}else if ( aField_type_name =="long"){
-								this."set${name}"(val as Long)
+								obj."set${name}"(val as Long)
 							}else if ( aField_type_name =="short"){
-								this."set${name}"(val as Short)
+								obj."set${name}"(val as Short)
 							}else if (aField_type_name =="byte"){
-								this."set${name}"(val as Byte)
+								obj."set${name}"(val as Byte)
 							}else if (aField_type_name =="char"){
-								this."set${name}"(val as Character)
+								obj."set${name}"(val as Character)
 							}else if ( aField_type_name =="float"){
-								this."set${name}"(val as Float)
+								obj."set${name}"(val as Float)
 							}else if (aField_type_name =="double"){
-								this."set${name}"(val as Double)
+								obj."set${name}"(val as Double)
 							}else if (aField_type_name =="java.io.File"){
 								File file = new File(val);
 								if ( arg.fileExistence() == 0){
 									
 								}else if ( arg.fileExistence() == 1 && !file.exists()){
-									warn ("File ${file} does not exit")
+									LOGGER.warn ("File ${file} does not exit")
 									retval = false
 								}else if ( arg.fileExistence() == 2 && !file.exists()){
 									if ( arg.isFolder()){
@@ -391,16 +392,16 @@ class CLTBase implements AutoConfig, AutoLogger{
 										file.text ="";
 									}
 								}
-								this."set${name}"(file)
+								obj."set${name}"(file)
 							}else{
-								this."set${name}"(val)
+								obj."set${name}"(val)
 							}
 							
-							debug("Assigned ${aField.name}=${val}")
+							LOGGER.debug("Assigned ${aField.name}=${val}")
 						}
 					}
 					}else {
-						trace "Using default value for ${aField.name}"
+						LOGGER.trace "Using default value for ${aField.name}"
 					}
 				}
 			}
@@ -541,7 +542,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 	 * @param bindings The bindings. Example [name: 'Peter']
 	 * @return Realized value. Example: "Hello I am Peter"
 	 */
-	public String makeTemplate(String templateText, def bindings)
+	public static String makeTemplate(String templateText, def bindings)
 	{
 		def engine = new groovy.text.SimpleTemplateEngine()
 		def template = engine.createTemplate(templateText).make(bindings)
@@ -651,5 +652,6 @@ class CLTBase implements AutoConfig, AutoLogger{
 	public void configRead(){
 		debug "Config file read"
 	}
+	
 }
 

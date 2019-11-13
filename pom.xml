@@ -4,8 +4,7 @@
 
 	<artifactId>commandlinetool-base</artifactId>
 	<groupId>com.github.krishnact</groupId>
-
-	<version>0.4.9</version>
+	<version>0.4.11</version>
 	<repositories>
 		<repository>
 			<id>jitpack.io</id>

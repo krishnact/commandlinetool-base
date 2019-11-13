@@ -169,7 +169,7 @@ public class _LOGGER_HELPER{
 					//source = new org.apache.logging.log4j.core.config.ConfigurationSource();
 					Class.forName("org.apache.logging.log4j.core.config.Configurator").initialize(null, source);
 					_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
-					if ( System.getenv()['__QUIET'] == null){
+					if ( System.getenv()['__AUTOLOGGER_QUIET'] == null){
 						_LOGGER.info("Continuing with default log4j properties")
 					}
 				}
@@ -206,10 +206,16 @@ public class _LOGGER_HELPER{
 			"""
 			Properties ppp = new Properties()
 			ppp.load(new ByteArrayInputStream(log4jText.bytes))
-			Class properyCOnfigureator = Class.forName("org.apache.log4j.PropertyConfigurator").configure(ppp)
 
+			Class properyCOnfigureator = null;
+			try{
+				properyCOnfigureator = Class.forName("org.apache.log4j.PropertyConfigurator").configure(ppp)
+			}catch(Exception ex){
 
+			}
+			if (properyCOnfigureator != null){
 			try {
+					
 				File propsFile = new File(log4jProperties)
 				if ( propsFile.size() > 16) // Zero size files can be a problem sometimes.
 				{
@@ -217,16 +223,18 @@ public class _LOGGER_HELPER{
 					Class.forName('org.apache.log4j.PropertyConfigurator').configure(props);
 					_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
 				}else{
-					if ( System.getenv()['__QUIET'] == null){
+						if ( System.getenv()['__AUTOLOGGER_QUIET'] == null){
 						_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
-						_LOGGER.info("Continuing with default log4j properties")
+							_LOGGER.info("Continuing with default log4j properties. Set __AUTOLOGGER_QUIET=1 to suppress this message.")
 					}
 				}
 			} catch (Exception e) {
-				Class.forName('org.apache.log4j.PropertyConfigurator').configure(new ByteArrayInputStream(log4jText.bytes))
+					Class.forName('org.apache.log4j.PropertyConfigurator').configure(new ByteArrayInputStream(log4jText.bytes));
 				_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
+					if ( System.getenv()['__AUTOLOGGER_QUIET'] == null){
 				_LOGGER.info("While reading config file ${log4jProperties}", e) ;
-				_LOGGER.info("Continuing with default log4j properties")
+						_LOGGER.info("Continuing with default log4j properties");
+					}
 			}
 
 			//Get the MBean server
@@ -235,7 +243,7 @@ public class _LOGGER_HELPER{
 			Log4jConfiguratorMXBean mBean = new Log4jConfigurator();
 			ObjectName name = new ObjectName("org.himalay.commandlingtool:type=LoggingConfig");
 			mbs.registerMBean(mBean, name);
-
+			}
 		}
 	}
 

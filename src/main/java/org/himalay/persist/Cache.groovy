@@ -43,7 +43,7 @@ class Cache extends RDBMS{
 		if ( row.size() > 0) {
 			ret = new CachedItem(row[0]);
 			if (expired != null && expired.call(ret.updatedAt, ret) ){
-			ret = null;
+				ret = null;
 				if (deleteOnExpired == true){
 					getSql().execute('delete from CachedItem where key1=? and key2 =?',  key1,  key2);
 				}
@@ -114,9 +114,13 @@ class Cache extends RDBMS{
 		return false;
 	}
 
+	public void delete(String key1, String key2){
+		getSql().execute("delete from ${tableName} where key1=? and key2 =?",  key1,  key2);
+	}
+	
 	
 	private boolean insert(String key1, String key2, String value, int status=2){
-		def ret = sql.executeInsert("insert into CachedItem (key1,key2,value,updatedAt,status) values(?,?,?,?,?)", key1, key2, value, Sql.TIMESTAMP(new Date()),status);
+		def ret = sql.executeInsert("insert into ${tableName} (key1,key2,value,updatedAt,status) values(?,?,?,?,?)", key1, key2, value, Sql.TIMESTAMP(new Date()),status);
 		if ( ret.size() > 0) return true;
 	}
 	/**
@@ -137,8 +141,6 @@ class Cache extends RDBMS{
 	}
 
 	
-
-
 	public void finalize() {
 		if ( sql != null) {
 			sql.close()
@@ -158,4 +160,5 @@ class Cache extends RDBMS{
 		String url = "jdbc:h2:file:${path};MVCC=TRUE;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE"
 		return new Cache(url, "sa", "", "org.h2.Driver",tableName) ;
 	}
+
 }
