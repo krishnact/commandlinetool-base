@@ -121,9 +121,12 @@ trait AutoLogger {
 	}
 }
 
-public class _LOGGER_HELPER{
+
+class LOGGER_CONFIG_LOADER{
 	private static Logger _LOGGER = null;
-	static{
+	static String loggerConfigFilePath = null;
+	static ObjectName beanName = null;
+	static void LOAFDER() {
 		boolean useLog4j2 = true;
 		try{
 			Class cls = Class.forName('org.apache.logging.log4j.core.config.ConfigurationSource');
@@ -139,9 +142,10 @@ public class _LOGGER_HELPER{
 					log4jProperties = System.getenv("_LOG4J_PROPERTIES");
 				}
 				if (log4jProperties == null){
-					log4jProperties ="./conf/log4j.configurationFile"
+					log4jProperties ="./${_CONF_FOLDER.getConfFolderName()}/log4j.configurationFile"
 				}
 			}
+			
 			Properties props = new Properties();
 			def logLevel = System.getenv()["__LOGLEVEL"]
 			if (logLevel == null ) logLevel='INFO'
@@ -183,13 +187,13 @@ public class _LOGGER_HELPER{
 				_LOGGER.info("While reading config file ${log4jProperties}", e) ;
 				_LOGGER.info("Continuing with default log4j properties")
 			}
-
+			loggerConfigFilePath = log4jProperties;
 		}else{
 			String log4jProperties = System.getProperty("_LOG4J_PROPERTIES");
 			if ( log4jProperties == null) {
 				log4jProperties = System.getenv("_LOG4J_PROPERTIES");
 				if (log4jProperties == null){
-					log4jProperties ="./conf/log4j.properties"
+					log4jProperties ="./${_CONF_FOLDER.getConfFolderName()}/log4j.properties"
 				}
 			}
 			Properties props = new Properties();
@@ -212,7 +216,7 @@ public class _LOGGER_HELPER{
 				properyCOnfigureator = Class.forName("org.apache.log4j.PropertyConfigurator");
 				//properyCOnfigureator.configure(ppp)
 			}catch(Exception ex){
-			    if(logLevel == "DEBUG"){
+				if(logLevel == "DEBUG"){
 					ex.printStackTrace();
 				}
 			}
@@ -240,20 +244,54 @@ public class _LOGGER_HELPER{
 						_LOGGER.info("Continuing with default log4j properties");
 					}
 				}
-
-				//Get the MBean server
-				MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-				//register the MBean
-				Log4jConfiguratorMXBean mBean = new Log4jConfigurator();
-				ObjectName name = new ObjectName("org.himalay.commandlingtool:type=LoggingConfig");
-				mbs.registerMBean(mBean, name);
+				loggerConfigFilePath = log4jProperties;
+				if ( beanName == null) {
+					//Get the MBean server
+					MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+					//register the MBean
+					Log4jConfiguratorMXBean mBean = new Log4jConfigurator();
+					beanName = new ObjectName("org.himalay.commandlingtool:type=LoggingConfig");
+					mbs.registerMBean(mBean, beanName);
+				}
 			}
 		}
-	}
 
+	}
+}
+
+public class _LOGGER_HELPER{
+	
+	
+	static{
+		LOGGER_CONFIG_LOADER.LOAFDER();
+	}
+    public static void reloadLogConfiguration() {
+		LOGGER_CONFIG_LOADER.LOAFDER();
+	}
 }
 
 
 public class _LOGGER_HELPER_{
 	private static Logger _LOGGER = LoggerFactory.getLogger(AutoLogger.class);
+}
+
+class _CONF_FOLDER{
+	
+	private static String findConfFolder() {
+		String confFolderName = System.getProperty("_CONF_FOLDER");
+		if (confFolderName ==null) {
+			confFolderName = "./conf"
+			File confFolder = new File(confFolderName);
+			if (!confFolder.exists()) {
+				confFolderName = confFolderName = "./config"
+			}
+		}
+		return confFolderName;
+	}
+	
+	private static String confFolderName = findConfFolder();
+	
+	public static String getConfFolderName () {
+		return confFolderName;
+	}
 }

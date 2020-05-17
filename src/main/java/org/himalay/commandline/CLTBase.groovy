@@ -7,6 +7,12 @@ import java.io.File
 import java.lang.management.ManagementFactory
 import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.nio.file.FileSystems
+import java.nio.file.Path;
+import java.nio.file.StandardWatchEventKinds
+import java.nio.file.WatchEvent
+import java.nio.file.WatchKey
+import java.nio.file.WatchService
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.Map
@@ -24,6 +30,8 @@ class CLTBase implements AutoConfig, AutoLogger{
 	static String CREDENTIALS_FILE = System.getProperty("user.home")+ "/"+ $/etc/credentials.json/$ ;
 	protected CliBuilder cliBuilder_ = null
 	protected OptionAccessor opt = null;
+	volatile protected boolean running = false;
+	WatchService ws = null
 	public static void _main(CLTBase instance, String [] args)
 	{
 		OptionAccessor opt = instance.parseArgs(args);
@@ -33,12 +41,23 @@ class CLTBase implements AutoConfig, AutoLogger{
 		}else if (instance.verifyOptions(opt) == 0)
 		{
 			instance.preMain(args);
+			instance.running = true;
 			instance.realMain(opt);
 		}else{
 			instance.optionsVerificationFailed(opt, args);
 		}
-		
+		instance.stopThis();
 		instance.postMain()
+		if (System.getenv().get('DONT_ADD_SHUTDOWNHOOK') != null) {
+			Runtime.addShutdownHook {
+				instance.LOGGER.info('Program exiting.')
+			}
+		}
+	}
+	
+	private void stopThis() {
+		running = false;
+		this.ws.close();
 	}
 	
 	/**
@@ -651,6 +670,56 @@ class CLTBase implements AutoConfig, AutoLogger{
 	
 	public void configRead(){
 		debug "Config file read"
+	}
+	
+	public void realodLoggerConfiguration() {
+		_LOGGER_HELPER.reloadLogConfiguration();
+	}
+	
+	public Thread watchForLoggerConfigurationChange() {
+		final File logFile = new File(LOGGER_CONFIG_LOADER.loggerConfigFilePath);
+		final Path path = logFile.getParentFile().toPath();
+		info("Watching logger file ${logFile}")
+		
+		Thread retVal = null;
+		ws = FileSystems.getDefault().newWatchService();
+		ws.with { watchService ->
+			final WatchKey watchKey = path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+			retVal = Thread.start{
+				while (running) {
+					WatchKey wk = null
+					try{
+					wk = watchService.take();
+					}catch(Exception ex){
+						if (running) {
+							warn("Exception while processing ${logFile.getName()}", ex)
+						}
+					}
+					if (wk == null) {
+						break;
+					}
+					for (WatchEvent<?> event : wk.pollEvents()) {
+						//we only register "ENTRY_MODIFY" so the context is always a Path.
+						final Path changed = (Path) event.context();
+						if (changed.getFileName().endsWith(logFile.getName())) {
+							info("Reloading ${logFile.getName()}")
+							try {
+								realodLoggerConfiguration();
+							}catch(Exception ex) {
+								warn("Exception while processing ${logFile.getName()}", ex)
+							}
+						}
+					}
+				// reset the key
+				boolean valid = wk.reset();
+				if (!valid) {
+					info("Key has been unregistered");
+				}
+			}
+			}
+		}
+		
+		return retVal;
 	}
 	
 }

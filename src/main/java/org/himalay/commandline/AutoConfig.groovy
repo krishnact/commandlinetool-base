@@ -10,14 +10,13 @@ import groovy.json.JsonSlurper
 trait AutoConfig extends AutoLogger{
 
 	volatile private def config = null;
-	public String confFolderName = System.getProperty("_CONF_FOLDER");
 	String confFile   = null;
 	String osConfFile = null;
 
 	public String confFile(){
 		String className = this.class.canonicalName
 		if (confFile == null){
-			confFile = "./${confFolderName}/conf.${className}.json"
+			confFile = "./${_CONF_FOLDER.getConfFolderName()}/conf.${className}.json"
 		}
 		return confFile;
 	}
@@ -27,7 +26,7 @@ trait AutoConfig extends AutoLogger{
 		String os = System.getProperties()["os.name"].split(/[\s]+/)[0];
 		
 		if ( osConfFile == null){
-			osConfFile = "./${confFolderName}/conf.${className}."+os.toLowerCase()+".json"
+			osConfFile = "./${_CONF_FOLDER.getConfFolderName()}/conf.${className}."+os.toLowerCase()+".json"
 		}
 		return osConfFile;
 	}
@@ -37,12 +36,7 @@ trait AutoConfig extends AutoLogger{
 		Util util = new Util();
 		String className = this.class.canonicalName
 
-		if ( confFolderName == null) {
-			confFolderName = System.getenv("_CONF_FOLDER"); 
-			if (confFolderName == null){
-				confFolderName ="./conf"
-			}
-		}
+		
 
 		//confFile = "./${confFolderName}/conf.${className}.json"
 		initConf(confFile(), quiet)
