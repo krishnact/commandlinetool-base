@@ -209,40 +209,44 @@ public class _LOGGER_HELPER{
 
 			Class properyCOnfigureator = null;
 			try{
-				properyCOnfigureator = Class.forName("org.apache.log4j.PropertyConfigurator").configure(ppp)
+				properyCOnfigureator = Class.forName("org.apache.log4j.PropertyConfigurator");
+				//properyCOnfigureator.configure(ppp)
 			}catch(Exception ex){
-
+			    if(logLevel == "DEBUG"){
+					ex.printStackTrace();
+				}
 			}
 			if (properyCOnfigureator != null){
-			try {
+				try {
 					
-				File propsFile = new File(log4jProperties)
-				if ( propsFile.size() > 16) // Zero size files can be a problem sometimes.
-				{
-					props.load(new FileInputStream(propsFile));
-					Class.forName('org.apache.log4j.PropertyConfigurator').configure(props);
-					_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
-				}else{
-						if ( System.getenv()['__AUTOLOGGER_QUIET'] == null){
+					File propsFile = new File(log4jProperties)
+					if ( propsFile.size() > 16) // Zero size files can be a problem sometimes.
+					{
+						props.load(new FileInputStream(propsFile));
+						Class.forName('org.apache.log4j.PropertyConfigurator').configure(props);
 						_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
+					}else{
+						if ( System.getenv()['__AUTOLOGGER_QUIET'] == null){
+							_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
 							_LOGGER.info("Continuing with default log4j properties. Set __AUTOLOGGER_QUIET=1 to suppress this message.")
+						}
+						properyCOnfigureator.configure(ppp);
 					}
-				}
-			} catch (Exception e) {
+				} catch (Exception e) {
 					Class.forName('org.apache.log4j.PropertyConfigurator').configure(new ByteArrayInputStream(log4jText.bytes));
-				_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
+					_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
 					if ( System.getenv()['__AUTOLOGGER_QUIET'] == null){
-				_LOGGER.info("While reading config file ${log4jProperties}", e) ;
+						_LOGGER.info("While reading config file ${log4jProperties}", e) ;
 						_LOGGER.info("Continuing with default log4j properties");
 					}
-			}
+				}
 
-			//Get the MBean server
-			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-			//register the MBean
-			Log4jConfiguratorMXBean mBean = new Log4jConfigurator();
-			ObjectName name = new ObjectName("org.himalay.commandlingtool:type=LoggingConfig");
-			mbs.registerMBean(mBean, name);
+				//Get the MBean server
+				MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+				//register the MBean
+				Log4jConfiguratorMXBean mBean = new Log4jConfigurator();
+				ObjectName name = new ObjectName("org.himalay.commandlingtool:type=LoggingConfig");
+				mbs.registerMBean(mBean, name);
 			}
 		}
 	}

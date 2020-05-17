@@ -16,11 +16,11 @@ A library to base command line tools.
 <dependency>
 	    <groupId>com.github.krishnact</groupId>
 	    <artifactId>commandlinetool-base</artifactId>
-	    <version>0.4.10</version>
+	    <version>0.4.12</version>
 </dependency>
 ```
 See jitpack to learn how to used in other build tools.
-https://jitpack.io/#krishnact/commandlinetool-base/0.4.10
+https://jitpack.io/#krishnact/commandlinetool-base/0.4.9
 
 Example: Writing a simple URL Size counter, in Groovy.
 ```
@@ -29,7 +29,7 @@ Example: Writing a simple URL Size counter, in Groovy.
         @GrabResolver(name='jitpack.io', root='https://jitpack.io'),
         @Grab('org.slf4j:slf4j-log4j12:1.7.7'),
         @Grab('com.h2database:h2:1.4.196'),
-        @Grab('com.github.krishnact:commandlinetool-base:0.4.10'),
+        @Grab('com.github.krishnact:commandlinetool-base:0.4.12'),
         @GrabExclude(group = 'org.codehaus.groovy', module='groovy-sql') ,
         @GrabExclude(group = 'org.codehaus.groovy', module='groovy-cli-commons')  ,
         @GrabExclude(group = 'org.codehaus.groovy', module='groovy-json')         ,
