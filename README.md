@@ -1,3 +1,6 @@
+#To build and deploy locally
+gradlew clean jar publishToMavenLocal
+
 # commandlinetool-base
 A library to base command line tools.
 

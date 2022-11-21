@@ -178,7 +178,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 			//aField.isAnnotationPresent(Option.class)
 			Option arg = aField.getAnnotation(Option.class)
 			String aField_type_name = aField.type.name
-			def fieldClass = aField.clazz
+			def fieldClass = aField.getDeclaringClass();
 			if ( arg != null )
 			{	// Add to cli
 				Map<String,String> optAndArgName = getOptionName(aField);
@@ -254,7 +254,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 				if ( val != null) {
 					String valClassName = val?.class.name
 					String aField_type_name = aField.type.name
-					def fieldClass = aField.clazz
+					def fieldClass = aField.getDeclaringClass()
 					if (
 					valClassName!= 'java.lang.Boolean' ||
 					( aField.type.name =='boolean' && valClassName == 'java.lang.Boolean' )
@@ -342,7 +342,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 					if ( val != null) {
 					String valClassName = val?.class.name
 					String aField_type_name = aField.type.name
-					def fieldClass = aField.clazz
+					def fieldClass = aField.getDeclaringClass()
 					if (
 						 valClassName!= 'java.lang.Boolean' || 	
 						 ( aField.type.name =='boolean' && valClassName == 'java.lang.Boolean' )

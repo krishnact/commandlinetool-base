@@ -10,7 +10,6 @@ import javax.management.MBeanServer
 import javax.management.ObjectName
 
 import org.codehaus.groovy.runtime.callsite.GetEffectivePogoFieldSite
-import org.omg.PortableInterceptor.AdapterNameHelper
 
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
@@ -165,7 +164,7 @@ class LOGGER_CONFIG_LOADER{
 				File propsFile = new File(log4jProperties)
 				if ( propsFile.size() > 16) // Zero size files can be a problem sometimes.
 				{
-					Class.forName("org.apache.logging.log4j.core.config.Configurator").initialize(null, propsFile);
+					Class.forName("org.apache.logging.log4j.core.config.Configurator").initialize('', propsFile.getAbsolutePath());
 					_LOGGER = LoggerFactory.getLogger(AutoLogger.class);
 				}else{
 					Class cls = Class.forName("org.apache.logging.log4j.core.config.ConfigurationSource");
