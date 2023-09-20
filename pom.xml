@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>commandlinetool-base</artifactId>
 	<groupId>com.github.krishnact</groupId>
-	<version>0.4.12</version>
+	<version>0.4.13</version>
 	<repositories>
 		<repository>
 			<id>jitpack.io</id>
