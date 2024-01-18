@@ -10,12 +10,40 @@ import java.lang.annotation.RetentionPolicy;
  */
 @Retention(value=RetentionPolicy.RUNTIME)
 public @interface Option {
+	/**
+	 * Short option
+	 * @return the value
+	 */
 	String shortOpt      () default "_";
+	/**
+	 * long options
+	 * @return the value
+	 */
 	String longOpt       () default "";
+	/**
+	 * name
+	 * @return the value
+	 */
 	String argName       () default "";
+	/**
+	 * description
+	 * @return the value
+	 */
 	String description   () default "";
+	/**
+	 * required
+	 * @return the value
+	 */
 	boolean required     () default false;
+	/**
+	 * optional
+	 * @return the value
+	 */
 	boolean optional     () default true;
+	/**
+	 * Number of options. Set 0 for boolean options
+	 * @return the value
+	 */
 	int numberOfOptions  () default 1;
 	/**
 	 * What to do about existence of file.

@@ -55,9 +55,9 @@ class CLTBase implements AutoConfig, AutoLogger{
 		}
 	}
 	
-	private void stopThis() {
+	protected void stopThis() {
 		running = false;
-		this.ws.close();
+		this.ws?.close();
 	}
 	
 	/**
@@ -286,7 +286,7 @@ class CLTBase implements AutoConfig, AutoLogger{
 								if ( confVal.fileExistence() == 0){
 
 								}else if ( confVal.fileExistence() == 1 && !file.exists()){
-									LOGGER.warn ("File ${file} does not exit")
+									LOGGER.warn ("File/Folder ${file.absolutePath} does not exit")
 									retval = false
 								}else if ( confVal.fileExistence() == 2 && !file.exists()){
 									if ( confVal.isFolder()){

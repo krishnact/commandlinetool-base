@@ -11,8 +11,15 @@ import java.lang.annotation.RetentionPolicy;
 //import javax.management.MBeanException;
 //import javax.management.MBeanInfo;
 //import javax.management.ReflectionException;
+/**
+ * An annotation to export a method to JMX
+ */
 @Retention(value=RetentionPolicy.RUNTIME)
 public @interface ExposeToJmx {
+	/**
+	 * Description 
+	 * @return the value
+	 */
 	String description      () default "";
 }
 

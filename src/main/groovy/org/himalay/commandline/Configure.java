@@ -10,7 +10,15 @@ import java.lang.annotation.RetentionPolicy;
  */
 @Retention(value=RetentionPolicy.RUNTIME)
 public @interface Configure {
+	/**
+	 * The Key
+	 * @return the value
+	 */
 	String key              () default "";
+	/**
+	 * The default value
+	 * @return the value
+	 */
 	String defaultVal       () default "";
 	/**
 	 * What to do about existence of file.

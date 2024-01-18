@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import groovy.sql.GroovyResultSet
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql;
+import groovy.xml.XmlSlurper
 
 class RDBMS {
 	static Logger LOGGER = LoggerFactory.getLogger(RDBMS.class)
